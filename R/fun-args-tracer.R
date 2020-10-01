@@ -1,43 +1,41 @@
 #' @importFrom digest sha1
 #' @importFrom purrr detect_index discard map_chr
+#' @importFrom instrumentr is_successful is_vararg is_evaluated get_name get_parameters get_data get_result get_position get_arguments is_evaluated
 trace_exit_callback <- function(context, application, package, func, call) {
-  #browser()
-  if (!instrumentr::is_successful(call)) {
+  if (!is_successful(call)) {
     return()
   }
 
-  fun_name <- instrumentr::get_name(func)
-  package_name <- instrumentr::get_name(package)
-  params <- instrumentr::get_parameters(call)
+  fun_name <- get_name(func)
+  package_name <- get_name(package)
+  params <- get_parameters(call)
 
-  data <- instrumentr::get_data(context)
+  data <- get_data(context)
   values <- data$values
   sources <- data$sources
   values_sources <- data$values_sources
 
-  # either returnValue() or instrumentr::get_result(call)
-  # pos = -1
 
   for (param in params) {
-    pos <- instrumentr::get_position(param)
-    if (instrumentr::is_vararg(param)) {
+    pos <- get_position(param)
+    if (is_vararg(param)) {
       # for now we skip them
       next
     }
 
-    args <- instrumentr::get_arguments(param)
+    args <- get_arguments(param)
     if (length(args) != 1) {
       next
     }
 
     arg <- args[[1]]
-    if (!instrumentr::is_evaluated(arg)) {
+    if (!is_evaluated(arg)) {
       next
     }
-    arg_value <- instrumentr::get_result(arg)
+    arg_value <- get_result(arg)
 
     # the value part
-    value_hash <- sha1(arg_value)
+    value_hash <- sha1(arg_value) #val_hash <- process_val(arg_val, envir = values)
     if (!exists(value_hash, envir=values)) {
       value_ser <- serialize(arg_value, connection=NULL, ascii=FALSE)
       value <- list(value_hash, typeof(arg_value), value_ser)
@@ -50,15 +48,43 @@ trace_exit_callback <- function(context, application, package, func, call) {
       assign(source_hash, source, envir=sources)
     }
 
-    value_sources <- get0(value_hash, envir=values_sources)
-    if (is.null(value_sources)) {
-      value_sources <- new.env(parent=emptyenv())
-      assign(value_hash, value_sources, envir=values_sources)
+    value_source <- get0(value_hash, envir=values_sources)
+    if (is.null(value_source)) {
+      value_source <- new.env(parent=emptyenv())
+      assign(value_hash, value_source, envir=values_sources)
     }
-    count <- get0(source_hash, value_sources, ifnotfound=0)
+
+    count <- get0(source_hash, envir=value_source, ifnotfound=0)
     count <- count + 1
-    assign(source_hash, count, envir=value_sources)
+    assign(source_hash, count, envir=value_source)
   }
+ 
+  # the return value part
+  return_val <- get_result(call)
+  pos <- -1
+
+  return_val_hash <- sha1(return_val)
+  if (!exists(return_val_hash, envir=values)) {
+    value_ser <- serialize(return_val, connection=NULL, ascii=FALSE)
+    value <- list(return_val_hash, typeof(return_val), value_ser)
+    assign(return_val_hash, value, envir=values)
+  }
+
+  return_src_hash <- paste(package_name, fun_name, pos, sep=":")
+  if (!exists(return_src_hash, envir=sources)) {
+    source <- data.frame(return_src_hash, package_name, fun_name, pos)
+    assign(return_src_hash, source, envir=sources)
+  }
+
+  value_source <- get0(return_val_hash, envir=values_sources)
+  if (is.null(value_source)) {
+    value_source <- new.env(parent=emptyenv())
+    assign(return_val_hash, value_source, envir=values_sources)
+  }
+
+  count <- get0(return_src_hash, value_source, ifnotfound=0)
+  count <- count + 1
+  assign(return_src_hash, count, envir=value_source)
 }
 
 #' @export
@@ -89,8 +115,10 @@ trace_fun_args <- function(package, code) {
   list(result=result, data=get_data(context))
 }
 
+#' @importFrom instrumentr get_data set_data
+#' @importFrom purrr map_dfr
 process_traced_data <- function(context, application) {
-  data <- instrumentr::get_data(context)
+  data <- get_data(context)
   values <- data$values
   sources <- data$sources
   values_sources <- data$values_sources
@@ -100,9 +128,9 @@ process_traced_data <- function(context, application) {
   sources_df <- do.call(rbind, as.list(sources))
   rownames(sources_df) <- NULL
 
-  values_sources_df <- purrr::map_dfr(ls(values_sources), function(value_hash) {
+  values_sources_df <- map_dfr(ls(values_sources), function(value_hash) {
     value_sources <- get(value_hash, envir=values_sources)
-    purrr::map_dfr(ls(value_sources), function(source_hash) {
+    map_dfr(ls(value_sources), function(source_hash) {
       count <- get(source_hash, value_sources)
       data.frame(value_hash, source_hash, count)
     })
@@ -114,7 +142,7 @@ process_traced_data <- function(context, application) {
     values_sources=values_sources_df
   )
 
-  instrumentr::set_data(context, data)
+  set_data(context, data)
 }
 
 #' @export
@@ -125,11 +153,28 @@ save_fun_args_data <- function(data, dir) {
   }
 
   # TODO store data using saveRDS
+ 
 }
 
 #' @export
 trace <- function(package, dir, code) {
   # TODO: call trace_fun_args
-  # TODO: check results
-  # TODO: store results using save_dun_args_data
+  result <- trace_fun_args(package, code)
+  # TODO: check results ???
+  # TODO: store results using save_fun_args_data
+  if(length(result$result) == 2){
+    save_fun_args_data(result$data, dir)
+  }
 }
+
+## preprocess_values <- function(val, envir) {
+##   hash <- sha1(val)
+
+##   if (!exists(hash, envir)) {
+##     val_ser <- serialize(val, connection=NULL, ascii=FALSE)
+##     value <- list(hash, typeof(val), val_ser)
+##     assign(hash, value, envir)
+##   }
+
+##   hash
+## }
