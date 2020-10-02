@@ -15,29 +15,15 @@ trace_exit_callback <- function(context, application, package, func, call) {
   sources <- data$sources
   values_sources <- data$values_sources
 
-  for (param in params) {
-    pos <- get_position(param)
-    if (is_vararg(param)) {
-      # for now we skip them
-      next
+  store_val <- function(val) {
+    if(class(val) != "instrumentr_parameter") {
+      pos <- 0 # return value pos
     }
 
-    args <- get_arguments(param)
-    if (length(args) != 1) {
-      next
-    }
-
-    arg <- args[[1]]
-    if (!is_evaluated(arg)) {
-      next
-    }
-    arg_value <- get_result(arg)
-
-    # the value part
-    value_hash <- sha1(arg_value) #val_hash <- process_val(arg_val, envir = values)
+    value_hash <- sha1(val)
     if (!exists(value_hash, envir=values)) {
-      value_ser <- serialize(arg_value, connection=NULL, ascii=FALSE)
-      value <- list(value_hash, typeof(arg_value), value_ser)
+      value_ser <- serialize(val, connection=NULL, ascii=FALSE)
+      value <- list(value_hash, typeof(val), value_ser)
       assign(value_hash, value, envir=values)
     }
 
@@ -59,30 +45,28 @@ trace_exit_callback <- function(context, application, package, func, call) {
   }
 
   return_val <- get_result(call)
-  pos <- -1
+  store_val(return_val)
 
-  value_hash <- sha1(return_val)
-  if (!exists(value_hash, envir=values)) {
-    value_ser <- serialize(return_val, connection=NULL, ascii=FALSE)
-    value <- list(value_hash, typeof(return_val), value_ser)
-    assign(value_hash, value, envir=values)
+  for (param in params) {
+    pos <- get_position(param) + 1
+    if (is_vararg(param)) {
+      # for now we skip them
+      next
+    }
+
+    args <- get_arguments(param)
+    if (length(args) != 1) {
+      next
+    }
+
+    arg <- args[[1]]
+    if (!is_evaluated(arg)) {
+      next
+    }
+    arg_value <- get_result(arg)
+
+    store_val(arg_value)
   }
-
-  source_hash <- paste(package_name, fun_name, pos, sep=":")
-  if (!exists(source_hash, envir=sources)) {
-    source <- data.frame(source_hash, package_name, fun_name, pos)
-    assign(source_hash, source, envir=sources)
-  }
-
-  value_source <- get0(value_hash, envir=values_sources)
-  if (is.null(value_source)) {
-    value_source <- new.env(parent=emptyenv())
-    assign(value_hash, value_source, envir=values_sources)
-  }
-
-  count <- get0(source_hash, value_source, ifnotfound=0)
-  count <- count + 1
-  assign(source_hash, count, envir=value_source)
 }
 
 #' @export
@@ -160,10 +144,9 @@ save_fun_args_data <- function(data, dir) {
 trace <- function(package, dir, code) {
   # call trace_fun_args
   result <- trace_fun_args(package, code)
-  # TODO: check results ???
-  # TODO: store results using save_fun_args_data
-  if(length(result$result) ==  $$ length(result$data) == 3){
+  # check results
+  # store results using save_fun_args_data
+  if(class(result$result$error) == "instrumentr_undefined"  && length(result$data) == 3){
     save_fun_args_data(result$data, dir)
   }
 }
-
