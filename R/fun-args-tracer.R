@@ -15,7 +15,6 @@ trace_exit_callback <- function(context, application, package, func, call) {
   sources <- data$sources
   values_sources <- data$values_sources
 
-
   for (param in params) {
     pos <- get_position(param)
     if (is_vararg(param)) {
@@ -58,33 +57,32 @@ trace_exit_callback <- function(context, application, package, func, call) {
     count <- count + 1
     assign(source_hash, count, envir=value_source)
   }
- 
-  # the return value part
+
   return_val <- get_result(call)
   pos <- -1
 
-  return_val_hash <- sha1(return_val)
-  if (!exists(return_val_hash, envir=values)) {
+  value_hash <- sha1(return_val)
+  if (!exists(value_hash, envir=values)) {
     value_ser <- serialize(return_val, connection=NULL, ascii=FALSE)
-    value <- list(return_val_hash, typeof(return_val), value_ser)
-    assign(return_val_hash, value, envir=values)
+    value <- list(value_hash, typeof(return_val), value_ser)
+    assign(value_hash, value, envir=values)
   }
 
-  return_src_hash <- paste(package_name, fun_name, pos, sep=":")
-  if (!exists(return_src_hash, envir=sources)) {
-    source <- data.frame(return_src_hash, package_name, fun_name, pos)
-    assign(return_src_hash, source, envir=sources)
+  source_hash <- paste(package_name, fun_name, pos, sep=":")
+  if (!exists(source_hash, envir=sources)) {
+    source <- data.frame(source_hash, package_name, fun_name, pos)
+    assign(source_hash, source, envir=sources)
   }
 
-  value_source <- get0(return_val_hash, envir=values_sources)
+  value_source <- get0(value_hash, envir=values_sources)
   if (is.null(value_source)) {
     value_source <- new.env(parent=emptyenv())
-    assign(return_val_hash, value_source, envir=values_sources)
+    assign(value_hash, value_source, envir=values_sources)
   }
 
-  count <- get0(return_src_hash, value_source, ifnotfound=0)
+  count <- get0(source_hash, value_source, ifnotfound=0)
   count <- count + 1
-  assign(return_src_hash, count, envir=value_source)
+  assign(source_hash, count, envir=value_source)
 }
 
 #' @export
@@ -148,33 +146,24 @@ process_traced_data <- function(context, application) {
 #' @export
 save_fun_args_data <- function(data, dir) {
   # make sure you create the path if it does not exist
-  if (dir.exists(dir)) {
+  if (!dir.exists(dir)) {
     dir.create(dir, recursive=TRUE)
   }
-
-  # TODO store data using saveRDS
- 
+  browser()
+  # store data using saveRDS
+  saveRDS(data$values, file = paste0(dir, "/","values.RDS"))
+  saveRDS(data$sources, file = paste0(dir, "/","sources.RDS"))
+  saveRDS(data$values_sources, file = paste0(dir, "/","values_sources.RDS"))
 }
 
 #' @export
 trace <- function(package, dir, code) {
-  # TODO: call trace_fun_args
+  # call trace_fun_args
   result <- trace_fun_args(package, code)
   # TODO: check results ???
   # TODO: store results using save_fun_args_data
-  if(length(result$result) == 2){
+  if(length(result$result) ==  $$ length(result$data) == 3){
     save_fun_args_data(result$data, dir)
   }
 }
 
-## preprocess_values <- function(val, envir) {
-##   hash <- sha1(val)
-
-##   if (!exists(hash, envir)) {
-##     val_ser <- serialize(val, connection=NULL, ascii=FALSE)
-##     value <- list(hash, typeof(val), val_ser)
-##     assign(hash, value, envir)
-##   }
-
-##   hash
-## }
