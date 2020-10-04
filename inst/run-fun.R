@@ -1,24 +1,43 @@
 #!/usr/bin/env Rscript
 args <- commandArgs(TRUE)
 
-if (length(args) != 5) {
-  print("USAGE: ./run-fun.R [package] [function] [GBOV_path] [timeout] [output_path]")
+source("../R/helper.R")
+add1 <- function(x) { return(x + 1) }
+
+
+if (length(args) != 6) {
+  print("USAGE: ./run-fun.R [package] [function] [GBOV_path] [timeout] [output_path] [call #]")
+  stop()
 }
 
 ## Script Set Up
-f <- get_function(args[1], args[2])
+if (args[1] == "NULL" || args1[1] == "null") {
+  f <- get_function(NULL, args[2])
+} else {
+  f <- get_function(args[1], args[2])
+}
+
 if (is.null(f)) {
   print("Could not locate specified function")
+  stop()
 }
 
 gbov <- gbov_load(args[3])
 if (is.null(gbov)) {
   print("Could not locate the Great Book of Values")
+  stop()
 }
 
 timeout = as.integer(args[4])
 if (timeout <= 0) {
   print("Timeout is required to be a positive number.")
+  stop()
+}
+
+calls = as.integer(args[6]) # TODO: Use this in the run_until... function
+if (calls < 1) {
+  print("Must perform at least 1 call")
+  stop()
 }
 
 ## Result Set Up
@@ -28,37 +47,44 @@ if (timeout <= 0) {
 # type : chr - the type of the value
 # error : chr - the error message, only for the row at p_idx == 0
 
-CALL = 1
-PARAM = 1
+PARAM = 1 # Only deal with function with 1 argument for now
 ERROR_HASH = 0
 ERROR_TYPE = 0
 
-successes <- data.frame(call = integer(0), # constant for now
+# Create global data.frame successes and failures
+successes <<- data.frame(call = integer(0),
                         param = integer(0), # constant for now 
                         hash = character(0), 
-                        type = character(0))
+                        type = character(0),
+                        stringsAsFactors = FALSE)
 
-failures <- data.frame(call = integer(0), # constant for now
+failures <<- data.frame(call = integer(0),
                        param = integer(0),  # constant for now
                        hash = character(0), 
                        type = character(0),
-                       error = character(0))
+                       error = character(0),
+                       stringsAsFactors = FALSE)
 
-run_until_timeout_or_death(timeout, {
-  hash <- gbov_get_random_hash(gbov)
-  value <- gbov_get_value(gbov, hash)
+print("Initalized")
+
+ncall <<- 1
+run_until_timeout_or_death(timeout, function() {
+  hash <<- gbov_get_random_hash(gbov)
+  value <<- gbov_get_value(gbov, hash)
   tryCatch(
     {
-      ret = do.call(f, value)
-      successes[nrow(successes) + 1, ] = c(CALL, 0, gbov_add_value(ret), signatr_typeof(ret))
-      successes[nrow(successes) + 1, ] = c(CALL, PARAM, hash, signatr_typeof(value))
+      ret = do.call(f, as.list(value))
+      successes[nrow(successes) + 1, ] <<- c(ncall, 0, gbov_add_value(gbov, ret), signatr_typeof(ret))
+      successes[nrow(successes) + 1, ] <<- c(ncall, PARAM, hash, signatr_typeof(value))
+      ncall <<- ncall + 1
     }, error = function(err) {
-      failures[nrow(failures) + 1, ] = c(CALL, 0, ERROR_HASH, ERROR_TYPE, as.character(err))
-      failures[nrow(failures) + 1, ] = c(CALL, PARAM, hash, ERROR_TYPE, as.character(err))
+      failures[nrow(failures) + 1, ] <<- c(ncall, 0, ERROR_HASH, ERROR_TYPE, as.character(err))
+      failures[nrow(failures) + 1, ] <<- c(ncall, PARAM, hash, ERROR_TYPE, as.character(err))
+      ncall <<- ncall + 1
     }
   )
 })
 
 ## Output result
-write.csv(successes, paste(args[5], "successes.csv", sep = "_"))
-write.csv(failures, paste(args[5], "failures.csv", sep = "_")
+write.csv2(successes, paste(args[5], "successes.csv", sep = "_"))
+write.csv2(failures, paste(args[5], "failures.csv", sep = "_"))
