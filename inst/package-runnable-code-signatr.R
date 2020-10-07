@@ -31,7 +31,7 @@ if (length(args) != 1) {
 package_path <- args[1]
 package <- basename(package_path)
 
-files <- runr::extract_package_code(
+df <- runr::extract_package_code(
   package,
   package_path,
   types="all",
