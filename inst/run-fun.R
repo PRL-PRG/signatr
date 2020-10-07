@@ -11,10 +11,16 @@ if (length(args) != 6) {
 }
 
 ## Script Set Up
-if (args[1] == "NULL" || args1[1] == "null") {
-  f <- get_function(NULL, args[2])
+if (args[1] == "NULL" || args[1] == "null") {
+  package = NULL
 } else {
-  f <- get_function(args[1], args[2])
+  package = args[1]
+}
+
+f <- get_function(package, args[2])
+if (is.null(f) && !is.null(package)) {
+  install.packages(package)
+  f <- get_function(package, args[2])
 }
 
 if (is.null(f)) {
@@ -74,7 +80,8 @@ run_until_timeout_or_death(timeout, function() {
   tryCatch(
     {
       ret = do.call(f, as.list(value))
-      successes[nrow(successes) + 1, ] <<- c(ncall, 0, gbov_add_value(gbov, ret), signatr_typeof(ret))
+      gbov <<- append(gbov, ret)
+      successes[nrow(successes) + 1, ] <<- c(ncall, 0, length(gbov), signatr_typeof(ret))
       successes[nrow(successes) + 1, ] <<- c(ncall, PARAM, hash, signatr_typeof(value))
       ncall <<- ncall + 1
     }, error = function(err) {
