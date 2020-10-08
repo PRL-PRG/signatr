@@ -8,16 +8,13 @@ library(runr)
 wrap <- function(package, file, type, body) {
   body <- paste("      ", body, collapse="\n")
   glue(
-    "evil::write_eval_traces(",
-    "  evil::trace_eval(",
-    "    quote = TRUE,",
-    "    code = {{",
+    "signatr::trace(code = {{",
     "{body}",
-    "    }}",
-    "  ),",
-    "  datadir=file.path(Sys.getenv('RUNR_CWD'), basename('{file}'))",
+    "}},",
+    "path=file.path(Sys.getenv('RUNR_CWD'), basename('{file}')),",
+    "package = \"{package}\"",
     ")",
-    .sep = "\n"
+  .sep = "\n"
   )
 }
 
