@@ -133,7 +133,7 @@ save_fun_args_data <- function(data, dir) {
   if (!dir.exists(dir)) {
     dir.create(dir, recursive=TRUE)
   }
-  browser()
+
   # store data using saveRDS
   saveRDS(data$values, file = paste0(dir, "/","values.RDS"))
   saveRDS(data$sources, file = paste0(dir, "/","sources.RDS"))

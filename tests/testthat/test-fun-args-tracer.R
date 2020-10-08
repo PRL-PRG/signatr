@@ -4,13 +4,10 @@ test_that("test value tracing", {
     stringr::str_detect("AB", "A")
   })
   browser()
-  str(r)
-  #saveRDS(source_df)
-  #saveRDS(as.list(values), "")
-  #saveRDS(values_sources_df, "")
+  save_fun_args_data(r$data, ".")
 })
 
-# signatr::trace(package="", path="str_detect.R", {
-#  <orginal code from example>
-#})
+## signatr::trace(package="", path="str_detect.R", {
+##  <orginal code from example>
+## })
 #
