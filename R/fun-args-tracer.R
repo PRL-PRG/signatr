@@ -128,25 +128,25 @@ process_traced_data <- function(context, application) {
 }
 
 #' @export
-save_fun_args_data <- function(data, dir) {
+save_fun_args_data <- function(data, path) {
   # make sure you create the path if it does not exist
-  if (!dir.exists(dir)) {
-    dir.create(dir, recursive=TRUE)
+  if (!dir.exists(path)) {
+    dir.create(path, recursive=TRUE)
   }
 
   # store data using saveRDS
-  saveRDS(data$values, file = paste0(dir, "/","values.RDS"))
-  saveRDS(data$sources, file = paste0(dir, "/","sources.RDS"))
-  saveRDS(data$values_sources, file = paste0(dir, "/","values_sources.RDS"))
+  saveRDS(data$values, file = paste0(path, "/","values.RDS"))
+  saveRDS(data$sources, file = paste0(path, "/","sources.RDS"))
+  saveRDS(data$values_sources, file = paste0(path, "/","values_sources.RDS"))
 }
 
 #' @export
-trace <- function(package, dir, code) {
+trace <- function(package, path, code) {
   # call trace_fun_args
   result <- trace_fun_args(package, code)
   # check results
   # store results using save_fun_args_data
   if(class(result$result$error) == "instrumentr_undefined"  && length(result$data) == 3){
-    save_fun_args_data(result$data, dir)
+    save_fun_args_data(result$data, path)
   }
 }
