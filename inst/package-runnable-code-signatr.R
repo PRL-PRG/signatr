@@ -5,35 +5,20 @@ options(error = function() { traceback(3); q(status=1) })
 library(glue)
 library(runr)
 
-## wrap <- function(package, file, type, body) {
-##   body <- paste("      ", body, collapse="\n")
-##   glue(
-##     "evil::write_eval_traces(",
-##     "  evil::trace_eval(",
-##     "    quote = TRUE,",
-##     "    code = {{",
-##     "{body}",
-##     "    }}",
-##     "  ),",
-##     "  datadir=file.path(Sys.getenv('RUNR_CWD'), basename('{file}'))",
-##     ")",
-##     .sep = "\n"
-##   )
-## }
-
 wrap <- function(package, file, type, body) {
   body <- paste("      ", body, collapse="\n")
   glue(
     "signatr::trace(code = {{",
     "{body}",
     "}},",
-    "path=file.path(Sys.getenv('RUNR_CWD'), basename('{file}'))",
+    "path=file.path(Sys.getenv('RUNR_CWD'), basename('{file}')),",
+    "package = \"{package}\"",
     ")",
   .sep = "\n"
   )
 }
 
-OUTPUT_FILE <- "gbov.csv"
+OUTPUT_FILE <- "runnable-code.csv"
 
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) != 1) {
