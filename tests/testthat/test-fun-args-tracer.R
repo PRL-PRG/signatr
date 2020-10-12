@@ -1,10 +1,10 @@
-## test_that("test value tracing", {
-##   r <- trace_fun_args("stringr", {
-##     stringr::str_detect("AB", "B")
-##     stringr::str_detect("AB", "A")
-##   })
-##   save_fun_args_data(r$data, "save_here")
-## })
+test_that("test value tracing", {
+  r <- trace_fun_args("stringr", {
+    stringr::str_detect("AB", "B")
+    stringr::str_detect("AB", "A")
+  })
+  save_fun_args_data(r$data, "save_here")
+})
 
 ## test_that("test value tracing", {
 ##   r <- trace("stringr",
