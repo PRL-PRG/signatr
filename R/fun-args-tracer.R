@@ -15,24 +15,34 @@ trace_exit_callback <- function(context, application, package, func, call) {
   sources <- data$sources
   values_sources <- data$values_sources
 
+  ## stopifnot(is.environment(values))
+  ## browser(expr=!is.environment(values))
   store_val <- function(val) {
     if(class(val) != "instrumentr_parameter") {
       pos <- 0 # return value pos
     }
 
-    value_hash <- sha1(val)
+    if(is.environment(val)){
+      value_hash <- sha1(as.list(val))
+    } else {
+      value_hash <- sha1(val)
+    }
+
+    ## browser(expr=!is.environment(values))
     if (!exists(value_hash, envir=values)) {
       value_ser <- serialize(val, connection=NULL, ascii=FALSE)
       value <- list(value_hash, typeof(val), value_ser)
       assign(value_hash, value, envir=values)
     }
 
+    ## browser(expr=!is.environment(sources))
     source_hash <- paste(package_name, fun_name, pos, sep=":")
     if (!exists(source_hash, envir=sources)) {
       source <- data.frame(source_hash, package_name, fun_name, pos)
       assign(source_hash, source, envir=sources)
     }
 
+    browser(expr=!is.environment(sources))
     value_source <- get0(value_hash, envir=values_sources)
     if (is.null(value_source)) {
       value_source <- new.env(parent=emptyenv())
@@ -43,7 +53,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
     count <- count + 1
     assign(source_hash, count, envir=value_source)
   }
-
+#  browser()
   return_val <- get_result(call)
   store_val(return_val)
 
@@ -70,29 +80,33 @@ trace_exit_callback <- function(context, application, package, func, call) {
 }
 
 #' @export
-#' @importFrom instrumentr create_context
-#' @importFrom instrumentr set_application_load_callback set_application_unload_callback
-#' @importFrom instrumentr set_data get_data trace_code
-trace_fun_args <- function(package, code) {
+#' @importfrom instrumentr create_context
+#' @importfrom instrumentr set_application_load_callback set_application_unload_callback
+#' @importfrom instrumentr set_data get_data trace_code
+trace_fun_args <- function(package, code, substituted = FALSE) {
   context <- create_context(
     call_exit_callback = trace_exit_callback,
     packages = package
   )
 
-  code <- substitute(code)
+  if(!substituted) {
+    code <- substitute(code)
+  }
 
   set_application_load_callback(context, function(context, application) {
+    print("******** load")
     data <- new.env(parent=emptyenv())
     data$values <- new.env(parent=emptyenv())
     data$sources <- new.env(parent=emptyenv())
     data$values_sources <- new.env(parent=emptyenv())
 
     set_data(context, data)
-  })
+ })
 
   set_application_unload_callback(context, process_traced_data)
 
   result <- trace_code(context, code, quote=FALSE)
+  ## process_traced_data(context, NULL)
 
   list(result=result, data=get_data(context))
 }
@@ -100,6 +114,7 @@ trace_fun_args <- function(package, code) {
 #' @importFrom instrumentr get_data set_data
 #' @importFrom purrr map_dfr
 process_traced_data <- function(context, application) {
+  print("************ unload")
   data <- get_data(context)
   values <- data$values
   sources <- data$sources
@@ -132,6 +147,7 @@ save_fun_args_data <- function(data, path) {
   # make sure you create the path if it does not exist
   if (!dir.exists(path)) {
     dir.create(path, recursive=TRUE)
+
   }
 
   # store data using saveRDS
@@ -142,8 +158,10 @@ save_fun_args_data <- function(data, path) {
 
 #' @export
 trace <- function(package, path, code) {
+  code <- substitute(code)
+  browser()
   # call trace_fun_args
-  result <- trace_fun_args(package, code)
+  result <- trace_fun_args(package, code, TRUE)
   # check results
   # store results using save_fun_args_data
   if(class(result$result$error) == "instrumentr_undefined"  && length(result$data) == 3){

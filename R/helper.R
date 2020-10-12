@@ -27,8 +27,8 @@ get_function <- function(package_name = NULL, function_name) {
 # Load the Great Book of Values
 # @param dir the directory where the RDS files are saved
 # @return GBOV
-gbov_load <- function(dir) {
-  path <- paste0(dir, "/", "values.RDS")
+gbov_load <- function(path) {
+  ## path <- paste0(dir, "/", "values.RDS")
   readRDS(path)
 }
 

@@ -12,7 +12,8 @@ wrap <- function(package, file, type, body) {
     "{body}",
     "}},",
     "path=file.path(Sys.getenv('RUNR_CWD'), basename('{file}')),",
-    "package = \"{package}\"",
+    ## "path= \"./gbov\",",
+    "package = '{package}'",
     ")",
   .sep = "\n"
   )
