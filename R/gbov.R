@@ -5,12 +5,14 @@
 # @param dir the directory where values.RDS file is located
 # @return a list of values each of which consists of 1) hash 2) type 3) serialized value
 load <- function(path) {
-  readRDS(path)
+  gbov <- readRDS(path)
+  class(gbov) <- c("gbov", class(gbov))
+  gbov
 }
 
 #' @export
-length <- function(gbov) {
-  length(gbov)
+length.gbov <- function(gbov) {
+  length(unclass(gbov))
 }
 
 # Get the hash from the gbov at the given index
@@ -65,12 +67,13 @@ add_value <- function(gbov, val) {
   as.list(val_env)
 }
 
-
-print <- function(gbov) {
+#' @export
+print.gbov <- function(gbov) {
   values <- list(character(0))
-  for(i in seq_along(1:length(gbov))) {
-    unserialized <- unserialize(gbov[[i]][[3L]])
-    values[[i]] = unserialized
+  for(i in seq_along(gbov)) {
+    value <- unserialize(gbov[[i]][[3L]])
+    values[[i]] = value
+    print(value)
   }
-  values
+  invisible(values)
 }
