@@ -66,7 +66,7 @@ add_value <- function(gbov, val) {
 }
 
 
-pprint <- function(gbov) {
+print <- function(gbov) {
   values <- list(character(0))
   for(i in seq_along(1:length(gbov))) {
     unserialized <- unserialize(gbov[[i]][[3L]])
