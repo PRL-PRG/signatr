@@ -44,7 +44,6 @@ get_type <- function (value) {
   typeof(value)
 }
 
-# TODO: Implement
 # Add a new value to the Great Book of Values
 # @param gbov
 # @param val 
