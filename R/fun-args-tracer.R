@@ -73,13 +73,13 @@ trace_exit_callback <- function(context, application, package, func, call) {
 #' @importFrom instrumentr create_context
 #' @importFrom instrumentr set_application_load_callback set_application_unload_callback
 #' @importFrom instrumentr set_data get_data trace_code
-trace_fun_args <- function(package, code) {
+trace_fun_args <- function(package, code, substituted = FALSE) {
   context <- create_context(
     call_exit_callback = trace_exit_callback,
     packages = package
   )
 
-  code <- substitute(code)
+  if(!substituted) {code <- substitute(code)}
 
   set_application_load_callback(context, function(context, application) {
     data <- new.env(parent=emptyenv())
@@ -142,11 +142,13 @@ save_fun_args_data <- function(data, path) {
 
 #' @export
 trace <- function(package, path, code) {
+  code <- substitute(code)
   # call trace_fun_args
-  result <- trace_fun_args(package, code)
+  result <- trace_fun_args(package, code, substituted = TRUE)
   # check results
   # store results using save_fun_args_data
   if(class(result$result$error) == "instrumentr_undefined"  && length(result$data) == 3){
     save_fun_args_data(result$data, path)
   }
+  invisible(result)
 }

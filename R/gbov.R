@@ -50,6 +50,7 @@ get_type <- function (value) {
 # @param gbov
 # @param val 
 # @return the gbov with the added val
+#' @export
 add_value <- function(gbov, val) {
   if(is.environment(val)){
     hash <- digest::sha1(as.list(val))
