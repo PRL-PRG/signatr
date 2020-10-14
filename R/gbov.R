@@ -27,7 +27,7 @@ get_hash <- function(gbov, index) {
 # @param gbov 
 # @return a random hash from the given gbov
 get_random_hash <- function(gbov) {
-  l = length(GBOV)
+  l = length(gbov)
   index = sample.int(l, 1)
   gbov[[index]][[1L]]
 }
@@ -64,7 +64,10 @@ add_value <- function(gbov, val) {
     value <- list(hash, typeof(val), value_ser)
     assign(hash, value, envir=val_env)
   }
-  as.list(val_env)
+
+  new_book <- as.list(val_env)
+  class(new_book) <- c("gbov", class(new_book))
+  new_book
 }
 
 #' @export
