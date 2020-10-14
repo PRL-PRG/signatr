@@ -3,11 +3,29 @@ test_that("test value tracing", {
     stringr::str_detect("AB", "B")
     stringr::str_detect("AB", "A")
   })
-  browser()
   save_fun_args_data(r$data, ".")
 })
 
-## signatr::trace(package="", path="str_detect.R", {
-##  <orginal code from example>
-## })
-#
+test_that("trace test", {
+  r <- signatr::trace(package="stringr", path=('./str_trim.Rd.R'), code = {
+    library(stringr)
+
+
+### Name: str_trim
+### Title: Trim whitespace from a string
+### Aliases: str_trim str_squish
+
+### ** Examples
+
+    str_trim("  String with trailing and leading white space\t")
+    str_trim("\n\nString with trailing and leading white space\n\n")
+
+    str_squish("  String with trailing,  middle, and leading white space\t")
+    str_squish("\n\nString with excess,  trailing and leading white   space\n\n")
+  })
+  browser()
+  str(r)
+})
+
+
+
