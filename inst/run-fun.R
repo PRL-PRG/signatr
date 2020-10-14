@@ -2,6 +2,8 @@
 args <- commandArgs(TRUE)
 
 source("../R/helper.R")
+source("../R/gbov.R")
+
 add1 <- function(x) { return(x + 1) }
 
 
@@ -19,7 +21,7 @@ if (args[1] == "NULL" || args[1] == "null") {
 
 f <- get_function(package, args[2])
 if (is.null(f) && !is.null(package)) {
-  install.packages(package)
+  install.packages(package) # Might not be a good idea in actual runs?
   f <- get_function(package, args[2])
 }
 
@@ -75,23 +77,37 @@ print("Initalized")
 
 ncall <<- 1
 run_until_timeout_or_death(timeout, function() {
-  hash <<- gbov_get_random_hash(gbov)
-  value <<- gbov_get_value(gbov, hash)
-  tryCatch(
-    {
-      ret = do.call(f, as.list(value))
-      gbov <<- append(gbov, ret)
-      successes[nrow(successes) + 1, ] <<- c(ncall, 0, length(gbov), signatr_typeof(ret))
-      successes[nrow(successes) + 1, ] <<- c(ncall, PARAM, hash, signatr_typeof(value))
-      ncall <<- ncall + 1
-    }, error = function(err) {
-      failures[nrow(failures) + 1, ] <<- c(ncall, 0, ERROR_HASH, ERROR_TYPE, as.character(err))
-      failures[nrow(failures) + 1, ] <<- c(ncall, PARAM, hash, ERROR_TYPE, as.character(err))
-      ncall <<- ncall + 1
-    }
-  )
-})
-
-## Output result
-write.csv2(successes, paste(args[5], "successes.csv", sep = "_"))
-write.csv2(failures, paste(args[5], "failures.csv", sep = "_"))
+  for (i in seq(calls)) {
+    tryCatch(
+      {
+        arg_list = get_args_for_function(f, gbov)
+        ret = do.call(f, arg_list)
+  
+        gbov <<- add_value(gbov, ret)
+  
+        successes[nrow(successes) + 1, ] <<- c(ncall, 0, length(gbov), 
+                                               signatr_typeof(ret))
+        for (j in seq(l)) {
+          successes[nrow(successes) + 1, ] <<- c(ncall, j, 
+                                                digest::sha1(arg_list[i]), 
+                                                typeof(arg_list[i]))
+        }
+        ncall <<- ncall + 1
+      }, error = function(err) {
+        failures[nrow(failures) + 1, ] <<- c(ncall, 0, ERROR_HASH, ERROR_TYPE, as.character(err))
+        
+        l = length(arg_list)
+        for (j in seq(l)) {
+          failures[nrow(successes) + 1, ] <<- c(ncall, j, 
+                                                 digest::sha1(arg_list[i]), 
+                                                 ERROR_TYPE, as.character(err))
+        }
+        ncall <<- ncall + 1
+      }
+    )}
+  },
+  function () {
+    write.csv2(successes, paste(args[5], "successes.csv", sep = "_"))
+    write.csv2(failures, paste(args[5], "failures.csv", sep = "_"))
+  }  
+)
