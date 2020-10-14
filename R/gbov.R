@@ -38,7 +38,7 @@ get_random_hash <- function(gbov) {
 # @return a random value from the given gbov
 get_value <- function (gbov) {
   random <- sample.int(length(gbov), 1)
-  unserialize(GBOV[[random]][[3L]])
+  unserialize(gbov[[random]][[3L]])
 }
 
 #' @export
