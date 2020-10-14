@@ -1,6 +1,5 @@
 ## Function Resolution Helper Functions
 
-# TODO: Implement
 # Get a function based on the package name and function name
 # @param package_name is the name of the package to look in
 # @param function_name is the name of the function
@@ -20,6 +19,25 @@ get_function <- function(package_name = NULL, function_name) {
   )
 }
 
+
+## Function Argument Helper Functions
+
+# Get create a list of argument that can be passed to a function
+# @param f is the function in question
+# @param GBOV is the GBOV object that contains values
+# @param return a list of random arguments pulled from the GBOV
+get_args_for_function <- function(f = NULL, GBOV = NULL) {
+  fargs = formals(f)
+  fargs_names = names(fargs)
+  
+  for (name in fargs_names) {
+    fargs[name] = get_value(GBOV)
+    print(fargs[name])
+  }
+  
+  return(fargs)
+}
+
 ## Type Identification Helper Functions
 
 # TODO: Implement
@@ -37,10 +55,13 @@ signatr_typeof <- function(value) {
 # Run a function until a specified amount of time elapsed, or until killed
 # @param f is the function to be run
 # @param timeout is the amount of time to run the function
-run_until_timeout_or_death <- function(timeout, f) {
+run_until_timeout_or_death <- function(timeout, f, exit_function) {
+  on.exit(expr = exit_function)
+  
   end = as.integer(Sys.time()) + timeout
   while (end > as.integer(Sys.time())) {
     f()
+    break
   }
 }
 
