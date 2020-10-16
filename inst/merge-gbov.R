@@ -23,13 +23,7 @@ gbov <- character()
 
 for (file in files) {
   values <- load(file)
-  gbov <- append(gbov, values)
+  gbov <- c(gbov, values)
 }
-
-## for (file in files) {
-##   values <- readRDS(file)  
-##   class(values) <- c("gbov", class(values))
-##   gbov <- append(values, gbov)
-## }
 
 saveRDS(gbov, file = paste0(run_dir, "/", "gbov.RDS"))
