@@ -1,5 +1,7 @@
 #!/usr/bin/env Rscript
 
+library(signatr)
+
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) < 1) {
   message("Usage: merge-gbov.R <dir> <file1> [... <fileN>]")
@@ -20,7 +22,7 @@ cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 gbov <- character()
 
 for (file in files) {
-  values <- signatr::load(file)
+  values <- load(file)
   gbov <- append(gbov, values)
 }
 
