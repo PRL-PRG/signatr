@@ -1,15 +1,20 @@
 clean:
-	rm *_successes.csv *_failures.csv
+	rm *.csv
 
-succ:
-	Rscript run-fun.R rrr square . 1 ./ 5
+trivial:
+	Rscript run-fun.R NULL add1 gbov.RDS 1 ./ 5
 
-fail:
-	Rscript run-fun.R covr report . 1 ./ 5
+simple:
+	Rscript run-fun.R rrr square gbov.RDS 1 ./ 5
+
+complex:
+	Rscript run-fun.R covr report gbov.RDS 1 ./ 5
 
 part:
-	Rscript run-fun.R rrr square . 60 ./ 50000000
+	Rscript run-fun.R rrr square gbov.RDS 60 ./ 50000000
 	
-exp:
-	Rscript run-fun.R NULL add1 . 1 ./ 5
+one:
+	Rscript run-one.R rrr square gbov.RDS
 
+hundred:
+	./experiment.sh

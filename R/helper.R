@@ -32,7 +32,6 @@ get_args_for_function <- function(f = NULL, GBOV = NULL) {
   
   for (name in fargs_names) {
     fargs[name] = get_value(GBOV)
-    # print(fargs[name])
   }
   
   return(fargs)
@@ -55,7 +54,7 @@ signatr_typeof <- function(value) {
 # @param f is the function to be run
 # @param timeout is the amount of time to run the function
 run_until_timeout_or_death <- function(timeout, f, exit_function) {
-  on.exit(expr = exit_function)
+  on.exit(expr = exit_function())
   
   end = as.integer(Sys.time()) + timeout
   while (end > as.integer(Sys.time())) {
@@ -67,9 +66,10 @@ run_until_timeout_or_death <- function(timeout, f, exit_function) {
 # Run a function until the function is killed
 # @param f is the function to be run
 run_until_killed <- function(f, exit_function) {
-  on.exit(expr=exit_function)
   
-  while(true){
+  on.exit(expr = exit_function())
+  
+  while(TRUE){
     f()
   }
 }
