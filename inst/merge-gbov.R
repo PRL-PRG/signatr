@@ -22,7 +22,7 @@ cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 gbov <- character()
 
 for (file in files) {
-  values <- load(file)
+  values <- signatr::load(file)
   gbov <- append(gbov, values)
 }
 
