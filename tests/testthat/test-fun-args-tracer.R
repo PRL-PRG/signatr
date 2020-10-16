@@ -23,7 +23,6 @@ test_that("trace test", {
     str_squish("  String with trailing,  middle, and leading white space\t")
     str_squish("\n\nString with excess,  trailing and leading white   space\n\n")
   })
-  browser()
   str(r)
 })
 
