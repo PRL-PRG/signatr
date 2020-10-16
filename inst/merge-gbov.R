@@ -21,15 +21,15 @@ cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 
 gbov <- character()
 
-## for (file in files) {
-##   values <- signatr::load(file)
-##   gbov <- append(gbov, values)
-## }
-
 for (file in files) {
-  values <- readRDS(file)
-  class(values) <- c("gbov", class(values))
-  gbov <- append(values, gbov)
+  values <- load(file)
+  gbov <- append(gbov, values)
 }
+
+## for (file in files) {
+##   values <- readRDS(file)  
+##   class(values) <- c("gbov", class(values))
+##   gbov <- append(values, gbov)
+## }
 
 saveRDS(gbov, file = paste0(run_dir, "/", "gbov.RDS"))
