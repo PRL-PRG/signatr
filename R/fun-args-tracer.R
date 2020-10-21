@@ -2,7 +2,7 @@
 #' @importFrom purrr detect_index discard map_chr
 #' @importFrom instrumentr is_successful is_vararg is_evaluated get_name get_parameters get_data get_result get_position get_arguments is_evaluated
 trace_exit_callback <- function(context, application, package, func, call) {
-  if (!is_successful(call)) {
+  if (!instrumentr::is_successful(call)) {
     return()
   }
 
@@ -110,9 +110,9 @@ process_traced_data <- function(context, application) {
   sources_df <- do.call(rbind, as.list(sources))
   rownames(sources_df) <- NULL
 
-  values_sources_df <- map_dfr(ls(values_sources), function(value_hash) {
+  values_sources_df <- purrr::map_dfr(ls(values_sources), function(value_hash) {
     value_sources <- get(value_hash, envir=values_sources)
-    map_dfr(ls(value_sources), function(source_hash) {
+    purrr::map_dfr(ls(value_sources), function(source_hash) {
       count <- get(source_hash, value_sources)
       data.frame(value_hash, source_hash, count)
     })

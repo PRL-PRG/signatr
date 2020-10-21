@@ -6,7 +6,7 @@
 # @return a list of values each of which consists of 1) hash 2) type 3) serialized value
 load <- function(path) {
   gbov <- readRDS(path)
-  class(gbov) <- c("gbov", class(gbov))
+  if((class(gbov) != "gbov")[[1L]]) class(gbov) <- c("gbov", class(gbov))
   gbov
 }
 
@@ -36,7 +36,7 @@ get_random_hash <- function(gbov) {
 # Get a random value from the gbov
 # @param gbov
 # @return a random value from the given gbov
-get_value <- function (gbov) {
+get_random_value <- function (gbov) {
   random <- sample.int(length(gbov), 1)
   # unserialize(gbov[[random]][[3L]])
   gbov[[random]][[3L]]
@@ -81,4 +81,33 @@ print.gbov <- function(gbov) {
     print(value)
   }
   invisible(values)
+}
+
+#' By default takes a gbov object and saves it in the given path with
+#' the specified name and returns the path to the saved file
+#' if new is FALSE, it overwrites gbov.RDS in the given directory(path)
+#' #' @export
+save.gbov <- function(gbov, path = ".", name = "new-gbov", new = TRUE) {
+  if (!dir.exists(path)) dir.create(path, recursive=TRUE)
+
+  if(!new) {
+    name = "gbov"
+    saveRDS(gbov, file = paste0(path, "/", name, ".RDS"))
+  }
+  where <- paste0(path, "/", name, ".RDS")
+  saveRDS(gbov, file = where)
+  where
+}
+
+#' Looks up the value stored in the given gbov by the specified hash
+#' and returns it if it was found, otherwise NULL is returned
+#' #' @export
+look_up <- function(gbov, hash) {
+  for(val in gbov) {
+    if(val[[1]] == hash) {
+      return(unserialize(val[[3]]))
+    }
+  }
+  print("hash not found")
+  invisible(NULL)
 }
