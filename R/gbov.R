@@ -4,7 +4,7 @@
 # Load a gbov from its path
 # @param dir the directory where values.RDS file is located
 # @return a list of values each of which consists of 1) hash 2) type 3) serialized value
-load <- function(path) {
+load_gbov <- function(path) {
   gbov <- readRDS(path)
   if((class(gbov) != "gbov")[[1L]]) class(gbov) <- c("gbov", class(gbov))
   gbov
