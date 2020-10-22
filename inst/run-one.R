@@ -10,10 +10,14 @@ source("../R/gbov.R")
 add1 <- function(x) {x + 1}
 
 if (length(arguments) != 3) {
-  print("USAGE: ./run-one.R [package_source_path] [function] [GBOV_path]")
+  print("USAGE: ./run-one.R [package] [function] [GBOV_path]")
   print(arguments)
   stop()
 }
+
+# Get pass in just package
+# Get loop through all the functions in the package
+# Use getnamespace, get0
 
 # Get package name or NULL
 package = NULL
@@ -65,7 +69,7 @@ run_until_killed(function() { # function to be run
     
   for (name in fargs_names) {
     src_hash = paste(package, arguments[2], name, sep="::")
-    value = get_value(GBOV)
+    value = get_random_value(GBOV)
     val_hash = digest::sha1(value) # Need to make sure this is consistent
     calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, val_hash)
     fargs[name] = value
@@ -93,7 +97,7 @@ run_until_killed(function() { # function to be run
   call_id <<- call_id + 1
 
 }, function() { # function run at death
-  print("DEATH")
-  write.csv2(calls_record, paste(package, arguments[2], "calls.csv", sep = "::"))
-  write.csv2(results_record, paste(package, arguments[2], "results.csv", sep = "::"))
+  dir.create(paste(package, arguments[2], sep = "/"), recursive = TRUE)
+  write.csv(calls_record, paste(package, arguments[2], "calls.csv", sep = "/"), row.names = F)
+  write.csv(results_record, paste(package, arguments[2], "results.csv", sep = "/"), row.names = F)
 })
