@@ -15,11 +15,10 @@ trace_exit_callback <- function(context, application, package, func, call) {
   sources <- data$sources
   values_sources <- data$values_sources
 
-  store_val <- function(val) {
-    if(class(val) != "instrumentr_parameter") {
-      pos <- 0 # return value pos
-    }
-
+  store_val <- function(val, pos) {
+    ## if(class(val) != "instrumentr_parameter") {
+    ##   pos <- 0 # return value pos
+    ## }
     value_hash <- sha1(val)
     if (!exists(value_hash, envir=values)) {
       value_ser <- serialize(val, connection=NULL, ascii=FALSE)
@@ -45,7 +44,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
   }
 
   return_val <- get_result(call)
-  store_val(return_val)
+  store_val(return_val, pos = 0)
 
   for (param in params) {
     pos <- get_position(param) + 1
@@ -65,7 +64,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
     }
     arg_value <- get_result(arg)
 
-    store_val(arg_value)
+    store_val(arg_value, pos = pos)
   }
 }
 
