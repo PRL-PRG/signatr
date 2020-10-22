@@ -47,20 +47,11 @@ run_until_killed(function() {
   while (TRUE) {
     for (i in seq(length(functions))) {
       if (circuit > 1) {
-        print("Now Value")
         for (name in params[[i]]) {
           value = get_random_value(GBOV)
-          # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
-          # print(functions[i])
-          # print(value)
           params[[i]][name] <<- value
-          # print(params[[i]][name])
-          # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
         }
-        # print(params[[i]])
       }
-
-      # print(params[[i]])
       
       counter = 1
       param_names = names(params[[i]])
@@ -77,15 +68,23 @@ run_until_killed(function() {
                           params[[i]][[name]] == params[[i]][params[[i]][[name]]]) {
               val_hash = "NO_VALUE"
             } else {
-              val_hash = digest::sha1(params[[i]][[name]])
+              if (is.null(params[[i]][[name]])) {
+                val_hash = "NULL"
+              } else {
+                val_hash = digest::sha1(params[[i]][[name]])
+              }
             }
           }, error = function(err) {
-            val_hash = digest::sha1(params[[i]][[name]])
+            if (is.null(params[[i]][[name]])) {
+              val_hash = "NULL"
+            } else
+            {
+              val_hash = digest::sha1(params[[i]][[name]])
+            }
           })
           
           # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
           calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, val_hash)
-          print("HERE")
           # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
           counter = counter + 1
         }
