@@ -1,4 +1,4 @@
-gbov <- signatr::load("resources/values.RDS")
+gbov <- signatr::load_gbov("resources/values.RDS")
 
 ## [1] FALSE  TRUE FALSE FALSE
 ## [1] "^p"
@@ -22,7 +22,7 @@ gbov <- signatr::load("resources/values.RDS")
 ## [1] "a$"
 ## [1] "apple"    "banana"   "pear"     "pinapple"
 
-test_that("test load",{
+test_that("test load_gbov",{
   expect_equal(class(gbov)[[1L]], "gbov")
 })
 
