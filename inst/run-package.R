@@ -47,20 +47,48 @@ run_until_killed(function() {
   while (TRUE) {
     for (i in seq(length(functions))) {
       if (circuit > 1) {
-        for (name in names(params[i])) {
+        print("Now Value")
+        for (name in params[[i]]) {
           value = get_random_value(GBOV)
-          params[i][name] = value
+          # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
+          # print(functions[i])
+          # print(value)
+          params[[i]][name] <<- value
+          # print(params[[i]][name])
+          # print("!!!!!!!!!!!!!!!!!!!!!!!!!")
         }
+        # print(params[[i]])
       }
 
+      # print(params[[i]])
+      
       counter = 1
-      for (name in names(params[[i]])) {
-        src_hash = paste(package, names(functions)[i], name, sep="::")
-        val_hash = digest::sha1(params[[i]][name]) # Need to make sure this is consistent
-        # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
-        calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, val_hash)
-        # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
-        counter = counter + 1
+      param_names = names(params[[i]])
+      if (length(param_names) == 0) {
+        src_hash = paste(package, names(functions)[i], "NO_PARAMS", sep="::")
+        calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, "NO_VALUE")
+      } else {
+        for (name in param_names) {
+          src_hash = paste(package, names(functions)[i], name, sep="::")
+          
+          tryCatch({
+            ## Janky test for no default value
+            if (is.symbol(params[[i]][[name]]) &&
+                          params[[i]][[name]] == params[[i]][params[[i]][[name]]]) {
+              val_hash = "NO_VALUE"
+            } else {
+              val_hash = digest::sha1(params[[i]][[name]])
+            }
+          }, error = function(err) {
+            val_hash = digest::sha1(params[[i]][[name]])
+          })
+          
+          # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
+          calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, val_hash)
+          print("HERE")
+          # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
+          counter = counter + 1
+        }
       }
       
       tryCatch(
@@ -72,7 +100,7 @@ run_until_killed(function() {
           
           ret = do.call(functions[[i]], as.list(params[[i]]))
             
-          GBOV <<- add_value(GBOV, ret)
+          # GBOV <<- add_value(GBOV, ret)
           
           results_record[nrow(calls_record) + 1, ] <<- c("RES", "RES", "RES", "RES")
           # results_record[nrow(calls_record) + 1, ] <<- c(call_id, ret, "stdout", "stderr")
