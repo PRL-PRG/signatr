@@ -25,7 +25,7 @@ merged_RDS <- character()
 
 for (file in files) {
   perfile <- readRDS(paste0(run_dir, "/", file))
-  merged_RDS <- c(perfile, merged_RDS)
+  merged_RDS <- c(list(perfile), merged_RDS)
 }
 
 saveRDS(merged_RDS, file = paste0(run_dir, "/", pattern, ".RDS"))
