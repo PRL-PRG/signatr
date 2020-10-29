@@ -4,6 +4,7 @@
 # @param package_name is the name of the package to look in
 # @param function_name is the name of the function
 # @return the specified function or NULL
+#' @export
 get_function <- function(package_name = NULL, function_name, env = NULL) {
   tryCatch(
     {
@@ -105,6 +106,7 @@ run_until_timeout_or_death <- function(timeout, f, exit_function) {
 
 # Run a function until the function is killed
 # @param f is the function to be run
+#' @export
 run_until_killed <- function(f, exit_function) {
   
   on.exit(expr = exit_function())

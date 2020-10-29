@@ -1,31 +1,43 @@
 #!/usr/bin/env Rscript
-arguments <- commandArgs(TRUE)
+args <- commandArgs(trailingOnly=TRUE)
 
-# library(signatr)
+library(stringr)
+library(signatr)
+library(instrumentr)
+library(R.utils)
+library(digest)
 
-source("../R/helper.R")
-source("../R/gbov.R")
+## source("R/helper.R")
+## source("R/gbov.R")
 
-if (length(arguments) != 2) {
-  print("USAGE: ./run-one.R [package_name] [GBOV_path]")
+
+if (length(args) != 3) {
+  print("USAGE: ./run-package-function.R [package_path] [GBOV_path] [number-of-run]")
   stop()
 }
 
-package = NULL
-if (arguments[1] != "NULL" && arguments[1] != "null") {
-  package = basename(arguments[1])
-}
+package_path <- args[1]
+package <- basename(package_path)
 
-if (is.null(package)) {
-  print(paste("Invalid package name entered", arguments[1], sep=": "))
-  stop()
-}
+functions <- ls(sprintf("package:%s", package))
+
+## if (arguments[1] != "NULL" && arguments[1] != "null") {
+##   package = basename(arguments[1])
+## }
+
+## if (is.null(package)) {
+##   print(paste("Invalid package name entered", arguments[1], sep=": "))
+##   stop()
+## }
 
 # Assume GBOV exists at the path
-GBOV <- load(arguments[2])
+gbov_path <- args[2]
+GBOV <- load_gbov(gbov_path)
+
+thismany <- as.numeric(args[3])
 
 # Globals
-exports <<- names(getNamespace(package))
+## exports <<- names(getNamespace(package))
 
 calls_record <<- data.frame(call_id = integer(0),
                             source_hash = character(0),
@@ -39,96 +51,60 @@ results_record <<- data.frame(call_id = integer(0),
                               stringsAsFactors = FALSE)
 
 call_id <<- 1
-circuit <<- 1
+counter <<- thismany
 
-# Main
-run_until_killed(function() {
-  while (TRUE) {
-    for (i in seq(length(exports))) {
-      f = get_function(package, exports[[i]])
-      if (is.null(f)) {
-        next
+## experiments <- function() {
+for (f in functions) {
+  fun = signatr::get_function(package, f)
+  if (is.null(fun)) next
+  params = formals(fun)
+  param_names = names(params)
+
+  repeat {
+    if(counter == 0) break
+
+    counter <- counter - 1
+    # assign random arguments from GBOV to each parameter
+    for(name in param_names) {
+      arg = get_random_value(GBOV)
+      # cannot coerce type 'closure' to vector of type 'list'
+      if(typeof(arg) == "closure" || length(arg) == 0) {
+        arg = list(1,2,3,4)
       }
-      
-      params = formals(f)
-      param_names = names(params)
-      
-      if (circuit > 1) {
-        for (name in param_names) {
-          value = get_random_value(GBOV)
-          params[name] = value
-        }
-      }
-      
-      if (length(param_names) == 0) {
-        src_hash = paste(package, exports[[i]], "NO_PARAMS", sep="::")
-        calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, "NO_VALUE")
-      } else {
-        for (name in param_names) {
-          src_hash = paste(package, exports[[i]], name, sep="::")
-          
-          tryCatch({
-            ## Janky test for no default value
-            ## Might be involking undefined behavior
-            if (is.symbol(params[[name]]) &&
-                params[[name]] == params[params[[name]]]) {
-              val_hash = "NO_VALUE"
-            } else {
-              if (is.null(params[[name]])) {
-                val_hash = "NULL"
-              } else {
-                val_hash = digest::sha1(params[[name]])
-              }
-            }
-          }, error = function(err) {
-            if (is.null(params[[name]])) {
-              val_hash = "NULL"
-            } else
-            {
-              val_hash = digest::sha1(params[[name]])
-            }
-          })
-          
-          # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
-          calls_record[nrow(calls_record) + 1, ] <<- c(call_id, src_hash, val_hash)
-          # calls_record[nrow(calls_record) + 1, ] <<- c("WRITE", "WRITE", "WRITE")
-        }
-      }
-      
-      tryCatch(
-        {
-          print(paste("*** Call ID:", call_id, "***\n", sep=" "))
-          
-          ### Important
-          ret = do.call(f, as.list(params))
-          ### Important
-          
-          # GBOV <<- add_value(GBOV, ret)
-          
-          # results_record[nrow(calls_record) + 1, ] <<- c("RES", "RES", "RES", "RES")
-          results_record[nrow(calls_record) + 1, ] <<- c(call_id, ret, "stdout", "stderr")
-          # results_record[nrow(calls_record) + 1, ] <<- c("RES", "RES", "RES", "RES")
-        }, warning = function(warn) {
-          print("WARN")
-          # results_record[nrow(calls_record) + 1, ] <<- c("WARN", "WARN", "WARN", "WARN")
-          results_record[nrow(calls_record) + 1, ] <<- c(call_id, as.character(warn), "stdout", "stderr")
-          # results_record[nrow(calls_record) + 1, ] <<- c("WARN", "WARN", "WARN", "WARN")
-        },error = function(err) {
-          print("ERR")
-          print(as.character(err))
-          # results_record[nrow(calls_record) + 1, ] <<- c("ERROR", "ERROR", "ERROR", "ERROR")
-          results_record[nrow(calls_record) + 1, ] <<- c(call_id, as.character(err), "stdout", "stderr")
-          # results_record[nrow(calls_record) + 1, ] <<- c("ERROR", "ERROR", "ERROR", "ERROR")
-          
-        })
-      
-      call_id <<- call_id + 1
+      params[name] = arg
     }
-    circuit <<- circuit + 1
+
+    if(length(param_names) == 0) {
+      src_hash = paste(package, f, "NO_PARAMS", sep="::")
+      calls_record[nrow(calls_record)+1,] <- c(call_id, src_hash, "NO_VALUE")
+    } else {
+      for(name in param_names) {
+        src_hash = paste(package, f, name, sep="::")
+        val_hash = sha1(params[[name]])
+
+        calls_record[nrow(calls_record)+1,] <- c(call_id, src_hash, val_hash)
+      }
+    }
+
+    tryCatch({
+      result = withTimeout(do.call(fun, as.list(params)), timeout=3.1)
+      results_record[nrow(results_record)+1,] <- c(call_id, result, "stdout", "stderr")},
+    ## TimeoutException = function(ex) {"TimedOut"},
+    ## warning = function(warn) {
+    ##   "Warned"
+    ##   results_record[nrow(results_record)+1,] <<- c(call_id, as.character(warn), "stdout", "stderr")},
+    error = function(err) {
+      print("Errored")
+      results_record[nrow(results_record)+1,] <- c(call_id, as.character(err), "stdout", "stderr")})
+
+    call_id <<- call_id + 1
   }
-}, function() {
+  counter <- thismany
+}
+
+if(!dir.exists(package)) {
   dir.create(package)
-  write.csv(calls_record, paste(package, "calls.csv", sep = "/"), row.names = F)
-  write.csv(results_record, paste(package, "results.csv", sep = "/"), row.names = F)
-  save.gbov(GBOV)
-})
+}
+write.csv(calls_record, paste(package, "calls.csv", sep = "/"), row.names = FALSE)
+write.csv(results_record, paste(package, "results.csv", sep = "/"), row.names = FALSE)
+## save.gbov(GBOV, dir)

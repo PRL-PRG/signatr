@@ -85,7 +85,7 @@ print.gbov <- function(gbov) {
 #' By default takes a gbov object and saves it in the given path with
 #' the specified name and returns the path to the saved file
 #' if new is FALSE, it overwrites gbov.RDS in the given directory(path)
-#' #' @export
+#' @export
 save.gbov <- function(gbov, path = ".", name = "new-gbov", new = TRUE) {
   if (!dir.exists(path)) dir.create(path, recursive=TRUE)
 
