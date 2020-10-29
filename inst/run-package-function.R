@@ -7,9 +7,6 @@ library(instrumentr)
 library(R.utils)
 library(digest)
 
-## source("R/helper.R")
-## source("R/gbov.R")
-
 
 if (length(args) != 3) {
   print("USAGE: ./run-package-function.R [package_path] [GBOV_path] [number-of-run]")
@@ -21,39 +18,26 @@ package <- basename(package_path)
 
 functions <- ls(sprintf("package:%s", package))
 
-## if (arguments[1] != "NULL" && arguments[1] != "null") {
-##   package = basename(arguments[1])
-## }
-
-## if (is.null(package)) {
-##   print(paste("Invalid package name entered", arguments[1], sep=": "))
-##   stop()
-## }
-
 # Assume GBOV exists at the path
 gbov_path <- args[2]
 GBOV <- load_gbov(gbov_path)
 
 thismany <- as.numeric(args[3])
 
-# Globals
-## exports <<- names(getNamespace(package))
-
-calls_record <<- data.frame(call_id = integer(0),
+calls_record <- data.frame(call_id = integer(0),
                             source_hash = character(0),
                             value_hash = integer(0),
                             stringsAsFactors = FALSE)
 
-results_record <<- data.frame(call_id = integer(0),
+results_record <- data.frame(call_id = integer(0),
                               result = character(0),
                               stdout = character(0), # constant for now
                               stderr = character(0), # constant for now
                               stringsAsFactors = FALSE)
 
-call_id <<- 1
-counter <<- thismany
+call_id <- 1
+counter <- thismany
 
-## experiments <- function() {
 for (f in functions) {
   fun = signatr::get_function(package, f)
   if (is.null(fun)) next
@@ -89,15 +73,16 @@ for (f in functions) {
     tryCatch({
       result = withTimeout(do.call(fun, as.list(params)), timeout=3.1)
       results_record[nrow(results_record)+1,] <- c(call_id, result, "stdout", "stderr")},
-    ## TimeoutException = function(ex) {"TimedOut"},
-    ## warning = function(warn) {
-    ##   "Warned"
-    ##   results_record[nrow(results_record)+1,] <<- c(call_id, as.character(warn), "stdout", "stderr")},
-    error = function(err) {
-      print("Errored")
-      results_record[nrow(results_record)+1,] <- c(call_id, as.character(err), "stdout", "stderr")})
+      ## TimeoutException = function(ex) {"TimedOut"},
+      ## warning = function(warn) {
+      ##   print(call_id)
+      ##   print(as.character(warn))
+      ##   results_record[nrow(results_record)+1,] <<- c(call_id, as.character(warn), "stdout", "stderr")},
+      error = function(err) {
+        print(as.character(err))
+        results_record[nrow(results_record)+1,] <<- c(call_id, as.character(err), "stdout", "stderr")})
 
-    call_id <<- call_id + 1
+    call_id <- call_id + 1
   }
   counter <- thismany
 }
