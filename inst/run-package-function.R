@@ -72,6 +72,7 @@ for (f in functions) {
 
     tryCatch({
       result = withTimeout(do.call(fun, as.list(params)), timeout=3.1)
+
       results_record[nrow(results_record)+1,] <- c(call_id, result, "stdout", "stderr")},
       ## TimeoutException = function(ex) {"TimedOut"},
       ## warning = function(warn) {
