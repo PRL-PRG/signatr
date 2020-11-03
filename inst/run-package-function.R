@@ -30,10 +30,9 @@ calls_record <- data.frame(call_id = integer(0),
                             stringsAsFactors = FALSE)
 
 results_record <- data.frame(call_id = integer(0),
-                              result = character(0),
-                              stdout = character(0), # constant for now
-                              stderr = character(0), # constant for now
-                              stringsAsFactors = FALSE)
+                             result = character(0),
+                             error_code = integer(0),
+                             stringsAsFactors = FALSE)
 
 call_id <- 1
 counter <- thismany
@@ -51,10 +50,10 @@ for (f in functions) {
     # assign random arguments from GBOV to each parameter
     for(name in param_names) {
       arg = get_random_value(GBOV)
-      # cannot coerce type 'closure' to vector of type 'list'
-      if(typeof(arg) == "closure" || length(arg) == 0) {
-        arg = list(1,2,3,4)
-      }
+      ## # cannot coerce type 'closure' to vector of type 'list'
+      ## if(typeof(arg) == "closure" || length(arg) == 0) {
+      ##   arg = list(1,2,3,4)
+      ## }
       params[name] = arg
     }
 
@@ -72,16 +71,16 @@ for (f in functions) {
 
     tryCatch({
       result = withTimeout(do.call(fun, as.list(params)), timeout=3.1)
-
-      results_record[nrow(results_record)+1,] <- c(call_id, result, "stdout", "stderr")},
-      ## TimeoutException = function(ex) {"TimedOut"},
-      ## warning = function(warn) {
-      ##   print(call_id)
-      ##   print(as.character(warn))
-      ##   results_record[nrow(results_record)+1,] <<- c(call_id, as.character(warn), "stdout", "stderr")},
+      results_record[nrow(results_record)+1,] <- c(call_id, result, 0)},
+      TimeoutException = function(ex) {
+        print("TimedOut")
+        results_record[nrow(results_record)+1,] <<- c(call_id, NA, 3)},},
+      warning = function(warn) {
+        print(as.character(warn))
+        results_record[nrow(results_record)+1,] <<- c(call_id, NA, 2)},
       error = function(err) {
         print(as.character(err))
-        results_record[nrow(results_record)+1,] <<- c(call_id, as.character(err), "stdout", "stderr")})
+        results_record[nrow(results_record)+1,] <<- c(call_id, NA, 1)})
 
     call_id <- call_id + 1
   }
