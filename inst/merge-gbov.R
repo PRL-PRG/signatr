@@ -21,16 +21,9 @@ cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 
 gbov <- list()
 
-## for (file in files) {
-##   values <- load_gbov(paste0(run_dir, "/", file))
-##   gbov <- c(gbov, values)
-## }
-
-## saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
-
 for (file in files) {
   values <- load_gbov(paste0(run_dir, "/", file))
-  gbov <- modifyList(values, gbov)
+  gbov <- c(gbov, values)
 }
 
-saveRDS(gbov, file = paste0(run_dir, "/", "gbov.RDS"))
+saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
