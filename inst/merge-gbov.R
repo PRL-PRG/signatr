@@ -19,11 +19,18 @@ howmany <- length(files)
 
 cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 
-gbov <- character()
+gbov <- list()
+
+## for (file in files) {
+##   values <- load_gbov(paste0(run_dir, "/", file))
+##   gbov <- c(gbov, values)
+## }
+
+## saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
 
 for (file in files) {
   values <- load_gbov(paste0(run_dir, "/", file))
-  gbov <- c(gbov, values)
+  gbov <- modifyList(values, gbov)
 }
 
-saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
+saveRDS(gbov, file = paste0(run_dir, "/", "gbov.RDS"))
