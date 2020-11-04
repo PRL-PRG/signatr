@@ -26,4 +26,4 @@ for (file in files) {
   gbov <- c(gbov, values)
 }
 
-saveRDS(gbov, file = paste0(run_dir, "/", "gbov.RDS"))
+saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
