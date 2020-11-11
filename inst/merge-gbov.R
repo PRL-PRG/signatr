@@ -22,7 +22,7 @@ cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 gbov <- list()
 
 # ticktocking to measure time spent on appending and merging
-ticktoc::tic("appending")
+tictoc::tic("appending:")
 print("appending started ...")
 
 for (file in files) {
@@ -31,12 +31,12 @@ for (file in files) {
 }
 
 print("appending done.")
-ticktock::toc()
+tictoc::toc()
 
-ticktoc::tick()
+tictoc::tic("removing:")
 print("removing dupicates ...")
 
 saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
 
 print("removing done.")
-ticktock::toc()
+tictoc::toc()
