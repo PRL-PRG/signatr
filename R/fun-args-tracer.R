@@ -22,7 +22,9 @@ trace_exit_callback <- function(context, application, package, func, call) {
     value_hash <- sha1(val)
     if (!exists(value_hash, envir=values)) {
       value_ser <- serialize(val, connection=NULL, ascii=FALSE)
-      value <- list(value_hash, typeof(val), value_ser)
+      ## value <- list(value_hash, typeof(val), value_ser)
+      value <- data.frame(value_hash, typeof(val), I(list(value_ser)))
+      ## value <- data.frame(value_hash, typeof(val), I(list(val)))
       assign(value_hash, value, envir=values)
     }
 
@@ -104,7 +106,12 @@ process_traced_data <- function(context, application) {
   sources <- data$sources
   values_sources <- data$values_sources
 
-  values <- as.list(values)
+
+  ## values <- as.list(values)
+  ## values_df <- data.frame(Reduce(rbind, values), row.names = NULL)
+  values_df <- do.call(rbind, as.list(values))
+  rownames(values_df) <- NULL
+  colnames(values_df) <- c("value_hash", "type", "raw_value")
 
   sources_df <- do.call(rbind, as.list(sources))
   rownames(sources_df) <- NULL
@@ -118,7 +125,7 @@ process_traced_data <- function(context, application) {
   })
 
   data <- list(
-    values=values,
+    values=values_df,
     sources=sources_df,
     values_sources=values_sources_df
   )
@@ -136,7 +143,7 @@ save_fun_args_data <- function(data, path) {
   # store data using saveRDS
   saveRDS(data$values, file = paste0(path, "/","values.RDS"))
   saveRDS(data$sources, file = paste0(path, "/","sources.RDS"))
-  saveRDS(data$values_sources, file = paste0(path, "/","values_sources.RDS"))
+  saveRDS(data$values_sources, file = paste0(path, "/","counts.RDS"))
 }
 
 #' @export
