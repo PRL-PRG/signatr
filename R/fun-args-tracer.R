@@ -110,8 +110,11 @@ process_traced_data <- function(context, application) {
   ## values <- as.list(values)
   ## values_df <- data.frame(Reduce(rbind, values), row.names = NULL)
   values_df <- do.call(rbind, as.list(values))
-  rownames(values_df) <- NULL
-  colnames(values_df) <- c("value_hash", "type", "raw_value")
+
+  if (!nrow(values_df) == 0) {
+    rownames(values_df) <- NULL
+    colnames(values_df) <- c("value_hash", "type", "raw_value")
+  }
 
   sources_df <- do.call(rbind, as.list(sources))
   rownames(sources_df) <- NULL
