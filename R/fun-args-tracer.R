@@ -47,7 +47,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   return_val <- get_result(call)
   store_val(return_val, pos = 0)
-
+  browser()
   for (param in params) {
     pos <- get_position(param) + 1
     if (is_vararg(param)) {
@@ -109,12 +109,13 @@ process_traced_data <- function(context, application) {
 
   ## values <- as.list(values)
   ## values_df <- data.frame(Reduce(rbind, values), row.names = NULL)
-  values_df <- do.call(rbind, as.list(values))
-
-  if (!nrow(values_df) == 0) {
-    rownames(values_df) <- NULL
-    colnames(values_df) <- c("value_hash", "type", "raw_value")
+  if(length(as.list(values)) == 0) {
+    values_df <- data.frame()
+  } else {
+    values_df <- do.call(rbind, as.list(values))
   }
+  rownames(values_df) <- NULL
+  colnames(values_df) <- c("value_hash", "type", "raw_value")
 
   sources_df <- do.call(rbind, as.list(sources))
   rownames(sources_df) <- NULL
