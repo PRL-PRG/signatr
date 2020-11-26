@@ -28,7 +28,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
     source_hash <- paste(package_name, fun_name, pos, sep=":")
     if (!exists(source_hash, envir=sources)) {
-      source <- data.frame(source_hash, package_name, fun_name, pos)
+      source <- list(source_hash, package_name, fun_name, pos)
       assign(source_hash, source, envir=sources)
     }
 

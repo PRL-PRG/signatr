@@ -22,7 +22,7 @@ cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
 gbov <- list()
 
 for (file in files) {
-  values <- load_gbov(paste0(run_dir, "/", file))
+  values <- load.gbov(paste0(run_dir, "/", file))
   gbov <- c(gbov, values)
 }
 
