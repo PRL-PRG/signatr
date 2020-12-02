@@ -1,44 +1,25 @@
-gbov <- signatr::load_gbov("resources/values.RDS")
-
-## [1] FALSE  TRUE FALSE FALSE
-## [1] "^p"
-## [1] TRUE
-## NULL
-## [1]  TRUE FALSE FALSE FALSE
-## [1] FALSE
-## [1] "a"
-## [1] "^a"
-## [1] "aecfg"
-## [1] "b"
-## [1] TRUE TRUE TRUE TRUE
-## [1]  TRUE  TRUE FALSE FALSE
-## [1] "[aeiou]"
-## [1] "regex"
-## [1]  TRUE FALSE  TRUE FALSE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE
-## [13] FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
-## [25] FALSE FALSE
-## [1] "a" "b" "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" "o" "p" "q" "r" "s"
-## [20] "t" "u" "v" "w" "x" "y" "z"
-## [1] "a$"
-## [1] "apple"    "banana"   "pear"     "pinapple"
+reshape2_gbov <- signatr::load_gbov("tests/testthat/resources/reshape2/cast.Rd.R/values.RDS")
+stringr_gbov <- signatr::load_gbov("tests/testthat/resources/stringr/str_match.Rd.R/values.RDS")
 
 test_that("test load_gbov",{
-  expect_equal(class(gbov)[[1L]], "gbov")
+  expect_equal(class(reshape2_gbov)[[1L]], "gbov")
 })
 
 test_that("test length",{
-  expect_equal(length(gbov), 18)
+  expect_equal(length(reshape2_gbov), 185)
+  expect_equal(length(stringr_gbov), 17)
 })
 
-test_that("test get_hash",{
-  expect_equal(get_hash(gbov, 2), sha1("^p"))
+test_that("test get_hash", {
+  hash <- stringr_gbov$value_hash[[1]]
+  expect_equal(get_hash(stringr_gbov, 1), hash)
 })
 
-test_that("test look_up",{
-  expect_equal(look_up(gbov, sha1("^p")), "^p")
-  expect_equal(look_up(gbov, gbov[[3L]][[1L]]), TRUE)
-  # hash not found case
-  expect_equal(look_up(gbov, sha1("hyeyoung")), NULL)
+test_that("test get_random_hash", {
+  hash <- get_random_hash(stringr_gbov)
+  gbov_df <- as.data.frame(stringr_gbov)
+  index <- gbov_df[stringr_gbov$value_hash == hash,]
+  expect_equal(get_value_by_hash(stringr_gbov, hash), 
 })
 
 test_that("test get_random_hash", {
@@ -47,11 +28,6 @@ test_that("test get_random_hash", {
   expect_equal(sha1(value), random_hash)
 })
 
-test_that("test get_random_value", {
-  random_value <- get_random_value(gbov)
-  hash <- sha1(random_value)
-  expect_equal(look_up(gbov, hash), random_value)
-})
 
 test_that("test add_value", {
   newgbov <- add_value(gbov, "hyeyoung")

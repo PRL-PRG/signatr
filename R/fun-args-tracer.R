@@ -47,7 +47,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   return_val <- get_result(call)
   store_val(return_val, pos = 0)
-  browser()
+
   for (param in params) {
     pos <- get_position(param) + 1
     if (is_vararg(param)) {

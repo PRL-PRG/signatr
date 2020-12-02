@@ -1,61 +1,105 @@
 ## Great Book of Values Interface Functions
 
+# Load a gbov from its path 
+#' param: path path to the value database e.g. [PATH-TO]/merged-gbov.RDS
+#' return: data.frame(value_hash, type, raw_value)
 #' @export
-# Load a gbov from its path
-# @param dir the directory where values.RDS file is located
-# @return a list of values each of which consists of 1) hash 2) type 3) serialized value
 load_gbov <- function(path) {
   gbov <- readRDS(path)
   if((class(gbov) != "gbov")[[1L]]) class(gbov) <- c("gbov", class(gbov))
   gbov
 }
 
+# Load gbov meta data from its path
+#' param: path path to the metadata file e.g. [PATH-TO]/merged-meta.RDS
+#' return: data.frame(value_hash, source_hash, count, package_name, fun_name, pos)
+#' @export
 load_meta <- function(path) {
   meta <- readRDS(path)
+  meta
 }
 
 #' @export
 length.gbov <- function(gbov) {
   ## length(unclass(gbov))
-  nrow(gbov)
+  nrow(as.data.frame(gbov))
 }
 
-# Do we need this?
-# Get the hash from the gbov at the given index
-get_hash <- function(gbov, id) { 
-  gbov[id,1]
+# Get hash at given index
+get_hash_by_index <- function(gbov, index) {
+  as.data.frame(gbov)[index,1]
 }
 
-# Do we need this?
-# Get a random hash from the gbov
+# Get random hash
 get_random_hash <- function(gbov) {
-  id = sample.int(size(gbov), 1)
-  get_hash(gbov, id)
+  random_index = sample.int(length(gbov), 1)
+  get_hash(gbov, random_index)
 }
 
-#' @export
 # Get a random value from the gbov
-get_random_value <- function (gbov) {
-  id <- sample.int(nrow(gbov), 1)
-  unserialize(gbov[id, 3][[1]])
+#' @export
+get_random_value <- function (gbov, index = sample.int(length(gbov), 1)) {
+  ## random_index <- sample.int(nrow(gbov), 1)
+  if(class(gbov)[[1]] == "gbov") {
+    gbov <- as.data.frame(gbov)
+  }
+  unserialize(gbov[index, 3][[1]])
 }
 
-get_value_from_hash <- function(gbov, hash) {
-  unserialize(filter(gbov, value_hash == hash)$raw_value[[1]])
+# TODO: Assumed that a hash from metadata will be found in gbov,
+# but this turned out to be not true; Need to figure out when this happens
+get_value_by_hash <- function(gbov, hash) {
+  gbov_df <- as.data.frame(gbov)
+  match <- gbov_df[gbov_df$value_hash == hash,]
+  if(nrow(match) == 0) {
+    print(paste0("no value found by hash: ", hash))
+  } else {
+    unserialize(match$raw_value[[1]])
+  }
 }
 
 
+#' param: type A string representing type e.g. "list", "double", etc
 #' Get a subset of gbov containing only values of the specified type
-get_value_by_type <- function (gbov, ty) {
-  gbov_ty <- filter(gbov, type == ty)
-  ger_random_value(gbov_ty)
+#' @export
+get_random_value_by_type <- function (gbov, type) {
+  gbov_df <- as.data.frame(gbov)
+  match_df <- gbov_df[gbov_df$type == type,]
+  random_index <- sample.int(nrow(match_df), 1)
+
+  get_random_value(match_df, index = random_index)
 }
 
-get_value_by_package <- function (gbov, meta, name) {
-  meta_p <- filter(meta, package_name == name)
-  id <- sample.int(nrow(meta_p), 1)
-  hash <- meta_p[id,1]
-  get_value_from_hash(gbov, hash)
+
+#' param: package_name A string representing package_name e.g. "stringr", "dplyr", etc"
+#' Get a subset of gbov containing only values from the specified package
+#' @export
+get_random_value_by_package <- function (gbov, meta, package_name) {
+  match_df <- meta[meta$package_name == package_name,]
+  if(nrow(match_df) == 0) {
+    print(paste0("no value from ", package_name))
+  } else {
+    random_index <- sample.int(nrow(match_df), 1)
+    hash <- match_df[random_index, ]$value_hash
+
+    get_value_by_hash(gbov, hash)
+  }
+}
+
+
+#' param: package_name A string representing package_name e.g. "stringr", "dplyr", etc"
+#' Get a subset of gbov containing only values of the specified package
+#' @export
+get_random_value_not_from <- function (gbov, meta, package_name) {
+  match_df <- meta[meta$package_name != package_name,]
+  if(nrow(match_df) == 0) {
+    print(paste0("no value not from ", package_name))
+  } else {
+    random_index <- sample.int(nrow(match_df), 1)
+    hash <- match_df[random_index, ]$value_hash
+
+    get_value_by_hash(gbov, hash)
+  }
 }
 
 # Add a new value to the Great Book of Values
@@ -70,10 +114,13 @@ add_value <- function(gbov, val) {
     hash <- sha1(val)
   }
 
-  if(nrow(filter(gbov, value_hash == hash)) == 0) {
+  gbov_df <- as.data.frame(gbov)
+
+  if(nrow(gbov_df[gbov_df$value_hash == hash,]) == 0) {
     raw <- I(list(serialize(val, connection = NULL)))
-    new <- data.frame(value_hash = hash, type = typeof(val), raw_value = raw)
-    new_book <- rbind(gbov, new)
+    new_value <- data.frame(value_hash = hash, type = typeof(val), raw_value = raw)
+    new_book <- rbind(gbov_df, new_value) # new value at the bottom of gbov
+    class(new_book) <- c("gbov", class(new_book))
     new_book
   } else {
     gbov
@@ -93,9 +140,14 @@ add_value <- function(gbov, val) {
 }
 
 #' @export
+print <- function (gbov, ...) {
+  UseMethod("print", gbov)
+}
+
+#' @export
 print.gbov <- function(gbov) {
-  gbov$raw_value <- lapply(gbov$raw_value, unserialize)
-  gbov
+  gbov_df <- as.data.frame(gbov)
+  gbov_df
   ## values <- list(character(0))
   ## for(i in seq_along(gbov)) {
   ##   value <- unserialize(gbov[[i]][[3L]])
@@ -105,11 +157,28 @@ print.gbov <- function(gbov) {
   ## invisible(values)
 }
 
-#' By default takes a gbov object and saves it in the given path with
-#' the specified name and returns the path to the saved file
-#' if new is FALSE, it overwrites gbov.RDS in the given directory(path)
-#' #' @export
-save.gbov <- function(gbov, path = ".", name = "new-gbov", new = TRUE) {
+# Prints the first 10 rows of the given gbov
+#' @export
+less <- function (gbov, ...) {
+  UseMethod("less", gbov)
+}                                        #
+
+#' @export
+less.gbov <- function(gbov) {
+  gbov_df <- as.data.frame(gbov)
+  print(gbov_df[1:10,])
+}
+
+
+#' Saves gbov at specified directory by specified name
+#' if new = FALSE, current gbov.RDS is overwritten
+#' @export
+save <- function (gbov, ...) {
+  UseMethod("save", gbov)
+}                                        #
+
+#' @export
+save.gbov <- function(gbov, dir = ".", name = "new-gbov", new = TRUE) {
   if (!dir.exists(path)) dir.create(path, recursive=TRUE)
 
   if(!new) {
@@ -120,16 +189,3 @@ save.gbov <- function(gbov, path = ".", name = "new-gbov", new = TRUE) {
   saveRDS(gbov, file = where)
   where
 }
-
-## #' Looks up the value stored in the given gbov by the specified hash
-## #' and returns it if it was found, otherwise NULL is returned
-## #' 
-## look_up <- function(gbov, hash) {
-##   for(val in gbov) {
-##     if(val[[1]] == hash) {
-##       return(unserialize(val[[3]]))
-##     }
-##   }
-##   print("hash not found")
-##   invisible(NULL)
-## }
