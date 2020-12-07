@@ -38,12 +38,12 @@ get_random_hash <- function(gbov) {
 
 # Get a random value from the gbov
 #' @export
-get_random_value <- function (gbov, index = sample.int(length(gbov), 1)) {
-  ## random_index <- sample.int(nrow(gbov), 1)
+get_random_value <- function (gbov) {
+  random_index <- sample.int(length(gbov), 1)
   if(class(gbov)[[1]] == "gbov") {
     gbov <- as.data.frame(gbov)
   }
-  unserialize(gbov[index, 3][[1]])
+  unserialize(gbov[random_index, 3][[1]])
 }
 
 # TODO: Assumed that a hash from metadata will be found in gbov,
@@ -65,9 +65,8 @@ get_value_by_hash <- function(gbov, hash) {
 get_random_value_by_type <- function (gbov, type) {
   gbov_df <- as.data.frame(gbov)
   match_df <- gbov_df[gbov_df$type == type,]
-  random_index <- sample.int(nrow(match_df), 1)
 
-  get_random_value(match_df, index = random_index)
+  get_random_value(match_df)
 }
 
 
