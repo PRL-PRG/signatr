@@ -22,19 +22,14 @@ values_sources <- list.files(path = run_dir, pattern = "counts.RDS", recursive =
 tictoc::tic("merging started")
 cat(sprintf("merging %s files started ...\n\n", length(values)))
 
-## joined <- readRDS(paste0(run_dir, "/", values_sources[[1]]))
-## gbov <- readRDS(paste0(run_dir, "/", values[[1]]))
-## meta <- data.frame()
 
-gbov_df <- data.frame(character(), character(), character(), stringsAsFactors = FALSE)
-colnames(gbov_df) <- c("value_hash", "type", "raw_value")
-
+gbov_df <- readRDS(paste0(run_dir, "/", values[[1]]))
 joined <- readRDS(paste0(run_dir, "/", values_sources[[1]]))
 meta <- data.frame()
 
 for (i in seq_along(values)) {
   values_df <- readRDS(paste0(run_dir, "/", values[[i]]))
-  if (nrow(value) == 0) {
+  if (nrow(values_df) == 0) {
     next 
   }
   gbov_df <- full_join(gbov_df, values_df, by = "value_hash") %>% mutate(type = coalesce(type.x, type.y)) %>% select(-type.x, -type.y)
