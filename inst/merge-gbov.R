@@ -22,21 +22,27 @@ values_sources <- list.files(path = run_dir, pattern = "counts.RDS", recursive =
 tictoc::tic("merging started")
 cat(sprintf("merging %s files started ...\n\n", length(values)))
 
+## joined <- readRDS(paste0(run_dir, "/", values_sources[[1]]))
+## gbov <- readRDS(paste0(run_dir, "/", values[[1]]))
+## meta <- data.frame()
+
+gbov_df <- data.frame(character(), character(), charater(), stringsAsFactors = FALSE)
+colnames(gbov_df) <- c("value_hash", "type", "raw_value")
+
 joined <- readRDS(paste0(run_dir, "/", values_sources[[1]]))
-gbov <- readRDS(paste0(run_dir, "/", values[[1]]))
 meta <- data.frame()
 
 for (i in seq_along(values)) {
-  value <- readRDS(paste0(run_dir, "/", values[[i]]))
+  values_df <- readRDS(paste0(run_dir, "/", values[[i]]))
   if (nrow(value) == 0) {
     next 
   }
-  gbov <- full_join(gbov, value, by = "value_hash") %>% mutate(type = coalesce(type.x, type.y)) %>% select(-type.x, -type.y)
+  gbov_df <- full_join(gbov_df, values_df, by = "value_hash") %>% mutate(type = coalesce(type.x, type.y)) %>% select(-type.x, -type.y)
 
-  gbov$raw_value.x[gbov$raw_value.x == 'NULL'] <- NA
-  gbov$raw_value.y[gbov$raw_value.y == 'NULL'] <- NA
+  gbov_df$raw_value.x[gbov_df$raw_value.x == 'NULL'] <- NA
+  gbov_df$raw_value.y[gbov_df$raw_value.y == 'NULL'] <- NA
 
-  gbov <- gbov %>% mutate(raw_value = coalesce(raw_value.x, raw_value.y)) %>% select(-raw_value.x, -raw_value.y)
+  gbov_df <- gbov_df %>% mutate(raw_value = coalesce(raw_value.x, raw_value.y)) %>% select(-raw_value.x, -raw_value.y)
 
   value_source <- readRDS(paste0(run_dir, "/", values_sources[[i]]))
   source <- readRDS(paste0(run_dir, "/", sources[[i]]))
@@ -49,7 +55,7 @@ cat(sprintf("merging done.\n\n"))
 tictoc::toc()
 
 saveRDS(meta, file = paste0(run_dir, "/", "merged-meta.RDS"))
-saveRDS(gbov, file = paste0(run_dir, "/", "merged-gbov.RDS"))
+saveRDS(gbov_df, file = paste0(run_dir, "/", "merged-gbov.RDS"))
 
 
 #################################################################
