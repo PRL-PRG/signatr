@@ -28,6 +28,9 @@ meta <- data.frame()
 
 for (i in seq_along(values)) {
   value <- readRDS(paste0(run_dir, "/", values[[i]]))
+  if (nrow(value) == 0) {
+    next 
+  }
   gbov <- full_join(gbov, value, by = "value_hash") %>% mutate(type = coalesce(type.x, type.y)) %>% select(-type.x, -type.y)
 
   gbov$raw_value.x[gbov$raw_value.x == 'NULL'] <- NA
