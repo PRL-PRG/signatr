@@ -26,7 +26,7 @@ cat(sprintf("merging %s files started ...\n\n", length(values)))
 ## gbov <- readRDS(paste0(run_dir, "/", values[[1]]))
 ## meta <- data.frame()
 
-gbov_df <- data.frame(character(), character(), charater(), stringsAsFactors = FALSE)
+gbov_df <- data.frame(character(), character(), character(), stringsAsFactors = FALSE)
 colnames(gbov_df) <- c("value_hash", "type", "raw_value")
 
 joined <- readRDS(paste0(run_dir, "/", values_sources[[1]]))
