@@ -110,7 +110,7 @@ process_traced_data <- function(context, application) {
   ## values <- as.list(values)
   ## values_df <- data.frame(Reduce(rbind, values), row.names = NULL)
   if(length(as.list(values)) == 0) {
-    values_df <- data.frame(character(), character(), AsIs(), stringsAsFactors = FALSE)
+    values_df <- data.frame(character(), character(), I(raw()), stringsAsFactors = FALSE)
   } else {
     values_df <- do.call(rbind, as.list(values))
   }
