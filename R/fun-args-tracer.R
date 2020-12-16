@@ -16,15 +16,10 @@ trace_exit_callback <- function(context, application, package, func, call) {
   values_sources <- data$values_sources
 
   store_val <- function(val, pos) {
-    ## if(class(val) != "instrumentr_parameter") {
-    ##   pos <- 0 # return value pos
-    ## }
     value_hash <- sha1(val)
+
     if (!exists(value_hash, envir=values)) {
-      value_ser <- serialize(val, connection=NULL, ascii=FALSE)
-      ## value <- list(value_hash, typeof(val), value_ser)
-      value <- data.frame(value_hash, typeof(val), I(list(value_ser)))
-      ## value <- data.frame(value_hash, typeof(val), I(list(val)))
+      value <- list(value_hash, typeof(val), val)
       assign(value_hash, value, envir=values)
     }
 
@@ -106,31 +101,28 @@ process_traced_data <- function(context, application) {
   sources <- data$sources
   values_sources <- data$values_sources
 
-
-  ## values <- as.list(values)
-  ## values_df <- data.frame(Reduce(rbind, values), row.names = NULL)
-  if(length(as.list(values)) == 0) {
-    values_df <- data.frame(character(), character(), I(raw()), stringsAsFactors = FALSE)
+  values <- as.list(values)
+  if(length(values) == 0) {
+    sources_df <- data.frame(character(), character(), character(), numeric())
+    colnames(sources_df) <- c("source_hash", "package_name", "fun_name", "pos")
+    values_sources_df <- data.frame(character(), character(), numeric(), integer())
+    colnames(values_sources_df) <- c("value_hash", "source_hash", "count", "index")
   } else {
-    values_df <- do.call(rbind, as.list(values))
-  }
-  rownames(values_df) <- NULL
-  colnames(values_df) <- c("value_hash", "type", "raw_value")
- 
+    sources_df <- do.call(rbind, as.list(sources))
+    rownames(sources_df) <- NULL
 
-  sources_df <- do.call(rbind, as.list(sources))
-  rownames(sources_df) <- NULL
-
-  values_sources_df <- purrr::map_dfr(ls(values_sources), function(value_hash) {
-    value_sources <- get(value_hash, envir=values_sources)
-    purrr::map_dfr(ls(value_sources), function(source_hash) {
-      count <- get(source_hash, value_sources)
-      data.frame(value_hash, source_hash, count)
-    })
+    values_sources_df <- purrr::map_dfr(ls(values_sources), function(value_hash) {
+      value_sources <- get(value_hash, envir=values_sources)
+      purrr::map_dfr(ls(value_sources), function(source_hash) {
+        count <- get(source_hash, value_sources)
+        data.frame(value_hash, source_hash, count)
+      })
   })
-
+    ## values <- lapply(values, function(v) v[[3]])
+    values_sources_df$index <- match(values_sources_df$value_hash, names(values))
+  }
   data <- list(
-    values=values_df,
+    values=values,
     sources=sources_df,
     values_sources=values_sources_df
   )

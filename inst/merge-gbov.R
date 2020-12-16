@@ -14,67 +14,56 @@ if (!dir.exists(run_dir)) {
   stop(run_dir, ": no such a directory")
 }
 
-values <- list.files(path = run_dir, pattern = "values.RDS", recursive = TRUE)
-sources <- list.files(path = run_dir, pattern = "sources.RDS", recursive = TRUE)
-values_sources <- list.files(path = run_dir, pattern = "counts.RDS", recursive = TRUE)
+values_files <- list.files(path = run_dir, pattern = "values.RDS", recursive = TRUE)
+sources_files <- list.files(path = run_dir, pattern = "sources.RDS", recursive = TRUE)
+values_sources_files <- list.files(path = run_dir, pattern = "counts.RDS", recursive = TRUE)
 
 
 tictoc::tic("merging started")
-cat(sprintf("merging %s files started ...\n\n", length(values)))
+cat(sprintf("merging %s files started ...\n\n", length(values_files)))
 
 
-gbov_df <- readRDS(paste0(run_dir, "/", values[[1]]))
-joined <- readRDS(paste0(run_dir, "/", values_sources[[1]]))
+gbov <- new.env(parent=emptyenv())
 meta <- data.frame()
 
-for (i in seq_along(values)) {
-  values_df <- readRDS(paste0(run_dir, "/", values[[i]]))
-  if (nrow(values_df) == 0) {
-    next 
+gbov_index <- 1
+
+for (i in seq_along(values_files)) {
+  values_list <- readRDS(paste0(run_dir, "/", values_files[[i]]))
+  if(length(values_list) == 0) {
+    next
   }
-  gbov_df <- full_join(gbov_df, values_df, by = "value_hash") %>% mutate(type = coalesce(type.x, type.y)) %>% select(-type.x, -type.y)
 
-  gbov_df$raw_value.x[gbov_df$raw_value.x == 'NULL'] <- NA
-  gbov_df$raw_value.y[gbov_df$raw_value.y == 'NULL'] <- NA
+  values_sources_df <- readRDS(paste0(run_dir, "/", values_sources_files[[i]]))
+  sources_df <- readRDS(paste0(run_dir, "/", sources_files[[i]]))
 
-  gbov_df <- gbov_df %>% mutate(raw_value = coalesce(raw_value.x, raw_value.y)) %>% select(-raw_value.x, -raw_value.y)
+  hashes <- names(values_list)
+  for (j in seq_along(values_list)) {
+    hash <- hashes[[j]]
+    value <- values_list[[j]][[3]]
+    type <- values_list[[j]][[2]]
 
-  value_source <- readRDS(paste0(run_dir, "/", values_sources[[i]]))
-  source <- readRDS(paste0(run_dir, "/", sources[[i]]))
-  joined <- left_join(value_source, source, by = "source_hash")
+    values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
+
+    matched_id <- match(hash, meta$value_hash)
+    if(is.na(matched_id)) {
+      assign(toString(gbov_index), value, envir=gbov)
+      values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
+      assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
+    } else {
+      values_sources_df[values_sources_df$value_hash == hash,]$index <- matched_id
+    }
+  }
+
+  joined <- left_join(values_sources_df, sources_df, by = "source_hash")
 
   meta <- rbind(meta, joined)
 }
 
+meta_by_gbov_index <- meta[,-1]
+
 cat(sprintf("merging done.\n\n"))
 tictoc::toc()
 
-saveRDS(meta, file = paste0(run_dir, "/", "merged-meta.RDS"))
-saveRDS(gbov_df, file = paste0(run_dir, "/", "merged-gbov.RDS"))
-
-
-#################################################################
-## merged <- load_gbov(paste0(run_dir, "/", files_v[[1]]))
-
-## for (v in files_v[-1]) {
-##   gbov <- load_gbov(paste0(run_dir, "/", v))
-##   if(length(gbov) == 0) {
-##     next
-##   }
-
-##   merged <- full_join(merged, gbov, by = "value_hash") %>% mutate(type = coalesce(type.x, type.y)) %>% select(-type.x, -type.y)
-##   # fill empty cells with NA for coalescing
-##   # joined[joined == 'NULL'] <- NA is not good because of NULL type
-##   merged$value.x[merged$value.x == 'NULL'] <- NA
-##   merged$value.y[merged$value.y == 'NULL'] <- NA
-
-##   merged <- mutate(value = coalesce(value.x, value.y)) %>% select(-value.x, -value.y)
-## }
-
-## print("merging values done.")
-## tictoc::toc()
-
-## saveRDS(joined, file = paste0(run_dir, "/", "merged-gbov.RDS"))
-
-
-
+saveRDS(meta_by_gbov_index, file = paste0(run_dir, "/", "merged-meta.RDS"))
+saveRDS(gbov, file = paste0(run_dir, "/", "merged-gbov.RDS"))
