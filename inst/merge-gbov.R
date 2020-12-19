@@ -61,10 +61,10 @@ for (i in seq_along(values_files)) {
   meta <- rbind(meta, joined)
 }
 
-meta_by_gbov_index <- meta[,-1]
+## meta_by_gbov_index <- meta[,-1]
 
 cat(sprintf("merging done.\n\n"))
 tictoc::toc()
 
-saveRDS(meta_by_gbov_index, file = paste0(run_dir, "/", "merged-meta.RDS"))
+saveRDS(meta, file = paste0(run_dir, "/", "merged-meta.RDS"))
 saveRDS(gbov, file = paste0(run_dir, "/", "merged-gbov.RDS"))
