@@ -51,7 +51,8 @@ for (i in seq_along(values_files)) {
       values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
       assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
     } else {
-      values_sources_df[values_sources_df$value_hash == hash,]$index <- matched_id
+      values_sources_df[values_sources_df$value_hash == hash,]$index <- meta[matched_id, "index"]
+
     }
   }
 
