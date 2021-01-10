@@ -47,7 +47,9 @@ for (i in seq_along(values_files)) {
 
     matched_id <- match(hash, meta$value_hash)
     if(is.na(matched_id)) {
-      assign(toString(gbov_index), value, envir=gbov)
+      value_ls <- list(hash, value)
+      assign(toString(gbov_index), value_ls, envir=gbov)
+      ## assign(toString(gbov_index), value, envir=gbov)
       values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
       assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
     } else {

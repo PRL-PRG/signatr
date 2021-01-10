@@ -122,3 +122,11 @@ save.gbov <- function(gbov, meta, dir = ".", gbov_name, meta_name) {
   saveRDS(gbov, file = paste0(dir, "/", gbov_name, ".RDS"))
   saveRDS(meta, file = paste0(dir, "/", meta_name, ".RDS"))
 }
+
+#' @export
+unique.gbov <- function(gbov) {
+  lgbov <- as.list(gbov)
+  vgbov <- lapply(lgbov, function(x) x[[2]])
+  ugbov <- unique(vgbov)
+  length(ugbov)
+}
