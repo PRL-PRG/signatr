@@ -16,28 +16,33 @@ trace_exit_callback <- function(context, application, package, func, call) {
   values_sources <- data$values_sources
 
   store_val <- function(val, pos) {
-    value_hash <- sha1(val)
+    ty <- typeof(val)
+    if(ty == "closure" || class(val) == "environment") {
+      # do nothing
+    } else {
+      value_hash <- sha1(val)
 
-    if (!exists(value_hash, envir=values)) {
-      value <- list(value_hash, typeof(val), val)
-      assign(value_hash, value, envir=values)
+      if (!exists(value_hash, envir=values)) {
+        value <- list(value_hash, ty, val)
+        assign(value_hash, value, envir=values)
+      }
+
+      source_hash <- paste(package_name, fun_name, pos, sep=":")
+      if (!exists(source_hash, envir=sources)) {
+        source <- data.frame(source_hash, package_name, fun_name, pos)
+        assign(source_hash, source, envir=sources)
+      }
+
+      value_source <- get0(value_hash, envir=values_sources)
+      if (is.null(value_source)) {
+        value_source <- new.env(parent=emptyenv())
+        assign(value_hash, value_source, envir=values_sources)
+      }
+
+      count <- get0(source_hash, envir=value_source, ifnotfound=0)
+      count <- count + 1
+      assign(source_hash, count, envir=value_source)
     }
-
-    source_hash <- paste(package_name, fun_name, pos, sep=":")
-    if (!exists(source_hash, envir=sources)) {
-      source <- data.frame(source_hash, package_name, fun_name, pos)
-      assign(source_hash, source, envir=sources)
-    }
-
-    value_source <- get0(value_hash, envir=values_sources)
-    if (is.null(value_source)) {
-      value_source <- new.env(parent=emptyenv())
-      assign(value_hash, value_source, envir=values_sources)
-    }
-
-    count <- get0(source_hash, envir=value_source, ifnotfound=0)
-    count <- count + 1
-    assign(source_hash, count, envir=value_source)
   }
 
   return_val <- get_result(call)
