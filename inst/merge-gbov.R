@@ -3,6 +3,8 @@
 library(signatr)
 library(dplyr)
 
+## args <- "../test/experiments/simple/reshape2"
+
 args <- commandArgs(trailingOnly=TRUE)
 if (length(args) < 1) {
   message("Usage: merge-gbov.R <dir> [... <fileN>]")
@@ -42,6 +44,13 @@ for (i in seq_along(values_files)) {
     hash <- hashes[[j]]
     value <- values_list[[j]][[3]]
     type <- values_list[[j]][[2]]
+    #To debug
+    ## if(gbov_index == 336 || gbov_index == 398) {
+    ##   print(values_files[[i]])
+    ##   print(values_list[[j]])
+    ##   print(hash)
+    ##   print(value)
+    ## }
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 

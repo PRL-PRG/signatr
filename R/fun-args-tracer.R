@@ -16,9 +16,16 @@ trace_exit_callback <- function(context, application, package, func, call) {
   values_sources <- data$values_sources
 
   store_val <- function(val, pos) {
+    exclude <- list("closure", "language", "environment")
+
     ty <- typeof(val)
-    if(ty == "closure" || class(val) == "environment") {
-      # do nothing
+    if (ty %in%  list("list", "expression")) {
+      ty_list <- rapply(val, function(x) typeof(x))
+      if(sum(ty_list %in% exclude)) {
+        return()
+      }
+    } else if(ty %in% exclude) {
+      return()
     } else {
       value_hash <- sha1(val)
 
