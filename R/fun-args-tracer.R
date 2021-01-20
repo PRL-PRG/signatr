@@ -16,7 +16,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
   values_sources <- data$values_sources
 
   store_val <- function(val, pos) {
-    exclude <- list("closure", "language", "environment")
+    exclude <- list("closure", "language", "environment", "pairlist")
 
     ty <- typeof(val)
     if (ty %in%  list("list", "expression")) {
