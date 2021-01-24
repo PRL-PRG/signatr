@@ -16,40 +16,38 @@ trace_exit_callback <- function(context, application, package, func, call) {
   values_sources <- data$values_sources
 
   store_val <- function(val, pos) {
-    exclude <- list("closure", "language", "environment", "pairlist")
-
+    ## latest
     ty <- typeof(val)
-    if (ty %in%  list("list", "expression")) {
-      ty_list <- rapply(val, function(x) typeof(x))
-      if(sum(ty_list %in% exclude)) {
-        return()
-      }
-    } else if(ty %in% exclude) {
+    if(check_exclude(val, ty)) {
       return()
+    }
+
+    if (check_na(val)) {
+      value_hash <- na_hash(ty)
     } else {
       value_hash <- sha1(val)
-
-      if (!exists(value_hash, envir=values)) {
-        value <- list(value_hash, ty, val)
-        assign(value_hash, value, envir=values)
-      }
-
-      source_hash <- paste(package_name, fun_name, pos, sep=":")
-      if (!exists(source_hash, envir=sources)) {
-        source <- data.frame(source_hash, package_name, fun_name, pos)
-        assign(source_hash, source, envir=sources)
-      }
-
-      value_source <- get0(value_hash, envir=values_sources)
-      if (is.null(value_source)) {
-        value_source <- new.env(parent=emptyenv())
-        assign(value_hash, value_source, envir=values_sources)
-      }
-
-      count <- get0(source_hash, envir=value_source, ifnotfound=0)
-      count <- count + 1
-      assign(source_hash, count, envir=value_source)
     }
+
+    if (!exists(value_hash, envir=values)) {
+      value <- list(value_hash, ty, val)
+      assign(value_hash, value, envir=values)
+    }
+
+    source_hash <- paste(package_name, fun_name, pos, sep=":")
+    if (!exists(source_hash, envir=sources)) {
+      source <- data.frame(source_hash, package_name, fun_name, pos)
+      assign(source_hash, source, envir=sources)
+    }
+
+    value_source <- get0(value_hash, envir=values_sources)
+    if (is.null(value_source)) {
+      value_source <- new.env(parent=emptyenv())
+      assign(value_hash, value_source, envir=values_sources)
+    }
+
+    count <- get0(source_hash, envir=value_source, ifnotfound=0)
+    count <- count + 1
+    assign(source_hash, count, envir=value_source)
   }
 
   return_val <- get_result(call)
@@ -166,4 +164,47 @@ trace <- function(package, path, code) {
     save_fun_args_data(result$data, path)
   }
   invisible(result)
+}
+
+na_hash <- function(ty) {
+  if(ty == "double") {
+    sha1(as.numeric(NA))
+  } else if (ty == "integer") {
+    sha1(NA_integer_)
+  } else if (ty == "complex") {
+    sha1(NA_complex_)
+  } else if (ty == "real") {
+    sha1(NA_real_)
+  } else if (ty == "character") {
+    sha1(NA_character_)
+  } else if (ty == "data.frame") {
+    sha1(as.data.frame(NA))
+  } else if (ty == "list") {
+    sha1(as.list(NA))
+  } else {
+    sha1(NA)
+  }
+}
+
+check_exclude <- function(val, ty) {
+  exclude <- list("closure", "language", "environment")
+  recursive <- list("list", "expression")
+
+  if (ty %in%  recursive) {
+    ty_list <- rapply(val, typeof)
+    sum(ty_list %in% exclude)
+  } else if (ty == "pairlist") {
+    ty_list <- rapply(as.list(val), typeof)
+    sum(ty_list %in% exclude)
+  } else {
+    ty %in% exclude
+  }
+}
+
+check_na <- function(val) {
+  if(length(val) == 1) {
+    is.na(val)
+  } else {
+     FALSE
+  }
 }
