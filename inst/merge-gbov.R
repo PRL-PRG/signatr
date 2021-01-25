@@ -36,36 +36,58 @@ for (i in seq_along(values_files)) {
     next
   }
 
+  unique_values <- unique(values_list)
+
   values_sources_df <- readRDS(paste0(run_dir, "/", values_sources_files[[i]]))
   sources_df <- readRDS(paste0(run_dir, "/", sources_files[[i]]))
 
-  hashes <- names(values_list)
-  for (j in seq_along(values_list)) {
-    hash <- hashes[[j]]
-    value <- values_list[[j]][[3]]
-    type <- values_list[[j]][[2]]
-    #To debug
-    ## if(gbov_index == 336 || gbov_index == 398) {
-    ##   print(values_files[[i]])
-    ##   print(values_list[[j]])
-    ##   print(hash)
-    ##   print(value)
-    ## }
+  for(j in seq_along(unique_values)) {
+    hash <- unique_values[[j]][[1]]
+    value <- unique_values[[j]][[3]]
+    type <- unique_values[[j]][[2]]
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    matched_id <- match(hash, meta$value_hash)
-    if(is.na(matched_id)) {
-      value_ls <- list(hash, value)
-      assign(toString(gbov_index), value_ls, envir=gbov)
-      ## assign(toString(gbov_index), value, envir=gbov)
+    duplicate_found <- sum(unlist(lapply(as.list(gbov), function(x) identical(x[[2]], value)))) > 0 # identical closures are caught by duplicated but not by identical()
+  
+    ## gbov_list <- as.list(gbov)
+    ## duplicate_found <- sum(unlist(lapply(gbov_list, function(x) isTRUE(all.equal(x, value))))) > 0
+    if(duplicate_found) {
+      next()
+    } else {
+      assign(toString(gbov_index), list(hash, value), envir=gbov)
       values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
       assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
-    } else {
-      values_sources_df[values_sources_df$value_hash == hash,]$index <- meta[matched_id, "index"]
-
     }
   }
+
+  ## hashes <- names(values_list)
+  ## for (j in seq_along(values_list)) {
+  ##   hash <- hashes[[j]]
+  ##   value <- values_list[[j]][[3]]
+  ##   type <- values_list[[j]][[2]]
+  ##   #To debug
+  ##   ## if(gbov_index == 336 || gbov_index == 398) {
+  ##   ##   print(values_files[[i]])
+  ##   ##   print(values_list[[j]])
+  ##   ##   print(hash)
+  ##   ##   print(value)
+  ##   ## }
+
+  ##   values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
+
+  ##   matched_id <- match(hash, meta$value_hash)
+  ##   if(is.na(matched_id)) {
+  ##     value_ls <- list(hash, value)
+  ##     assign(toString(gbov_index), value_ls, envir=gbov)
+  ##     ## assign(toString(gbov_index), value, envir=gbov)
+  ##     values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
+  ##     assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
+  ##   } else {
+  ##     values_sources_df[values_sources_df$value_hash == hash,]$index <- meta[matched_id, "index"]
+
+  ##   }
+  ## }
 
   joined <- left_join(values_sources_df, sources_df, by = "source_hash")
 

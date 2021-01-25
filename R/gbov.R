@@ -129,3 +129,8 @@ unique.gbov <- function(gbov) {
   vgbov <- lapply(lgbov, function(x) x[[2]])
   unique(vgbov)
 }
+
+#' @export
+values_only <- function(gbov) {
+  vgbov <- lapply(as.list(gbov), function(x) x[[2]])
+}

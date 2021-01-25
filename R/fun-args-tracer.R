@@ -16,17 +16,18 @@ trace_exit_callback <- function(context, application, package, func, call) {
   values_sources <- data$values_sources
 
   store_val <- function(val, pos) {
-    ## latest
     ty <- typeof(val)
-    if(check_exclude(val, ty)) {
-      return()
-    }
+    ## if(check_exclude(val, ty)) {
+    ##   return()
+    ## }
 
-    if (check_na(val)) {
-      value_hash <- na_hash(ty)
-    } else {
-      value_hash <- sha1(val)
-    }
+    ## if (check_na(val)) {
+    ##   value_hash <- na_hash(ty)
+    ## } else {
+    ##   value_hash <- sha1(deparse(val))
+    ## }
+
+    value_hash <- sha1(deparse(val))
 
     if (!exists(value_hash, envir=values)) {
       value <- list(value_hash, ty, val)
