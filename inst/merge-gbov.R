@@ -25,6 +25,8 @@ tictoc::tic("merging started")
 cat(sprintf("merging %s files started ...\n\n", length(values_files)))
 
 
+
+
 gbov <- new.env(parent=emptyenv())
 meta <- data.frame()
 
@@ -48,11 +50,23 @@ for (i in seq_along(values_files)) {
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    duplicate_found <- sum(unlist(lapply(as.list(gbov), function(x) identical(x[[2]], value)))) > 0 # identical closures are caught by duplicated but not by identical()
-  
-    ## gbov_list <- as.list(gbov)
-    ## duplicate_found <- sum(unlist(lapply(gbov_list, function(x) isTRUE(all.equal(x, value))))) > 0
-    if(duplicate_found) {
+    ###
+    duplicate_found <- function(db, ty, val) {
+      if (ty == "closure") {
+        sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val)))))
+      } else if(ty %in% list("list", "expression")) {
+        ty_list <- rapply(val, typeof)
+        if ("closure" %in% ty_list) {
+          sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val)))))
+        } else {
+          sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
+        }
+      } else {
+        sum(unlist(lapply(db, function(x) identical(x[[2]], value))))
+      }
+    }
+    ## duplicate_found <- sum(unlist(lapply(as.list(gbov), function(x) if(type == "closure") isTRUE(all.equal(x[[2]], value)) else identical(x[[2]], value)))) > 0 # identical closures are caught by duplicated but not by identical()
+    if(duplicate_found(as.list(gbov), type, value)) {
       next()
     } else {
       assign(toString(gbov_index), list(hash, value), envir=gbov)

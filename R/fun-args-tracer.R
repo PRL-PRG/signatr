@@ -27,7 +27,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
     ##   value_hash <- sha1(deparse(val))
     ## }
 
-    value_hash <- sha1(deparse(val))
+    value_hash <- sha1(deparse1(val))
 
     if (!exists(value_hash, envir=values)) {
       value <- list(value_hash, ty, val)
@@ -187,25 +187,25 @@ na_hash <- function(ty) {
   }
 }
 
-check_exclude <- function(val, ty) {
-  exclude <- list("closure", "language", "environment")
-  recursive <- list("list", "expression")
+## check_exclude <- function(val, ty) {
+##   exclude <- list("closure", "language", "environment")
+##   recursive <- list("list", "expression")
 
-  if (ty %in%  recursive) {
-    ty_list <- rapply(val, typeof)
-    sum(ty_list %in% exclude)
-  } else if (ty == "pairlist") {
-    ty_list <- rapply(as.list(val), typeof)
-    sum(ty_list %in% exclude)
-  } else {
-    ty %in% exclude
-  }
-}
+##   if (ty %in%  recursive) {
+##     ty_list <- rapply(val, typeof)
+##     sum(ty_list %in% exclude)
+##   } else if (ty == "pairlist") {
+##     ty_list <- rapply(as.list(val), typeof)
+##     sum(ty_list %in% exclude)
+##   } else {
+##     ty %in% exclude
+##   }
+## }
 
-check_na <- function(val) {
-  if(length(val) == 1) {
-    is.na(val)
-  } else {
-     FALSE
-  }
-}
+## check_na <- function(val) {
+##   if(length(val) == 1) {
+##     is.na(val)
+##   } else {
+##      FALSE
+##   }
+## }
