@@ -55,14 +55,14 @@ for (i in seq_along(values_files)) {
       if (ty == "closure") {
         tryCatch(
           sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
-          error = function(e) return(NULL)
+          error = function(e) next()
         )
       } else if(ty %in% list("list", "expression")) {
         ty_list <- rapply(val, typeof)
         if ("closure" %in% ty_list) {
           tryCatch(
             sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
-            error = function(e) return(NULL)
+            error = function(e) next()
           )
         } else {
           sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
