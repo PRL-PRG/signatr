@@ -53,17 +53,19 @@ for (i in seq_along(values_files)) {
     ###
     duplicate_found <- function(db, ty, val) {
       if (ty == "closure") {
-        tryCatch(
-          sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
-          error = function(e) 1 # if errors, we chuck it
-        )
+        return()
+        ## tryCatch(
+        ##   sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
+        ##   error = function(e) 1 # as.POSIXct.default error for certain types of objects;if errors, we chuck it
+        ## )
       } else if(ty %in% list("list", "expression")) {
         ty_list <- rapply(val, typeof)
         if ("closure" %in% ty_list) {
-          tryCatch(
-            sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
-            error = function(e) 1
-          )
+          return()
+          ## trycatch(
+          ##   sum(unlist(lapply(db, function(x) istrue(all.equal(x[[2]], val))))),
+          ##   error = function(e) 1
+          ## )
         } else {
           sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
         }
