@@ -187,21 +187,6 @@ na_hash <- function(ty) {
   }
 }
 
-## check_exclude <- function(val, ty) {
-##   exclude <- list("closure", "language", "environment")
-##   recursive <- list("list", "expression")
-
-##   if (ty %in%  recursive) {
-##     ty_list <- rapply(val, typeof)
-##     sum(ty_list %in% exclude)
-##   } else if (ty == "pairlist") {
-##     ty_list <- rapply(as.list(val), typeof)
-##     sum(ty_list %in% exclude)
-##   } else {
-##     ty %in% exclude
-##   }
-## }
-
 ## check_na <- function(val) {
 ##   if(length(val) == 1) {
 ##     is.na(val)

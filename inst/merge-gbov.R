@@ -50,31 +50,10 @@ for (i in seq_along(values_files)) {
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    ###
-    duplicate_found <- function(db, ty, val) {
-      if (ty == "closure") {
-        return()
-        ## tryCatch(
-        ##   sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
-        ##   error = function(e) 1 # as.POSIXct.default error for certain types of objects;if errors, we chuck it
-        ## )
-      } else if(ty %in% list("list", "expression")) {
-        ty_list <- rapply(val, typeof)
-        if ("closure" %in% ty_list) {
-          return()
-          ## trycatch(
-          ##   sum(unlist(lapply(db, function(x) istrue(all.equal(x[[2]], val))))),
-          ##   error = function(e) 1
-          ## )
-        } else {
-          sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
-        }
-      } else {
-        sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
-      }
-    }
-    ## duplicate_found <- sum(unlist(lapply(as.list(gbov), function(x) if(type == "closure") isTRUE(all.equal(x[[2]], value)) else identical(x[[2]], value)))) > 0 # identical closures are caught by duplicated but not by identical()
-    if(duplicate_found(as.list(gbov), type, value)) {
+    duplicate_found <- find_duplicates(as.list(gbov), value, type)
+    if(is.null(duplicate_found)) {
+      next()
+    } else if(find_duplicates(as.list(gbov), value, type)) {
       next()
     } else {
       assign(toString(gbov_index), list(hash, value), envir=gbov)
@@ -83,40 +62,10 @@ for (i in seq_along(values_files)) {
     }
   }
 
-  ## hashes <- names(values_list)
-  ## for (j in seq_along(values_list)) {
-  ##   hash <- hashes[[j]]
-  ##   value <- values_list[[j]][[3]]
-  ##   type <- values_list[[j]][[2]]
-  ##   #To debug
-  ##   ## if(gbov_index == 336 || gbov_index == 398) {
-  ##   ##   print(values_files[[i]])
-  ##   ##   print(values_list[[j]])
-  ##   ##   print(hash)
-  ##   ##   print(value)
-  ##   ## }
-
-  ##   values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
-
-  ##   matched_id <- match(hash, meta$value_hash)
-  ##   if(is.na(matched_id)) {
-  ##     value_ls <- list(hash, value)
-  ##     assign(toString(gbov_index), value_ls, envir=gbov)
-  ##     ## assign(toString(gbov_index), value, envir=gbov)
-  ##     values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
-  ##     assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
-  ##   } else {
-  ##     values_sources_df[values_sources_df$value_hash == hash,]$index <- meta[matched_id, "index"]
-
-  ##   }
-  ## }
-
   joined <- left_join(values_sources_df, sources_df, by = "source_hash")
 
   meta <- rbind(meta, joined)
 }
-
-## meta_by_gbov_index <- meta[,-1]
 
 cat(sprintf("merging done.\n\n"))
 tictoc::toc()

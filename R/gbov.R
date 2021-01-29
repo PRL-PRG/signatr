@@ -134,3 +134,30 @@ unique.gbov <- function(gbov) {
 values_only <- function(gbov) {
   vgbov <- lapply(as.list(gbov), function(x) x[[2]])
 }
+
+#' @export
+find_duplicates <- function(db, val, ty) {
+  if (exclude(val, ty)) {
+    TRUE
+    ## tryCatch(
+    ##   sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
+    ##   error = function(e) 1 # as.POSIXct.default error for certain types of objects;if errors, we chuck it
+    ## )
+  } else {
+    sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
+  }
+}
+
+exclude <- function(val, ty) {
+  ## exclude <- list("closure", "language", "environment")
+
+  if (ty %in%  list("list", "expression")) {
+    ty_list <- rapply(val, typeof)
+    sum("closure" %in% ty_list)
+  } else if (ty == "pairlist") {
+    ty_list <- rapply(as.list(val), typeof)
+    sum("closure" %in% ty_list)
+  } else {
+    ty == "closure"
+  }
+}
