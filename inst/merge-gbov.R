@@ -48,15 +48,17 @@ for (i in seq_along(values_files)) {
     value <- unique_values[[j]][[3]]
     type <- unique_values[[j]][[2]]
 
+    if(exclude(value, type)) {
+      #TODO: remove corresponding metadata?
+      next()
+    }
+
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    duplicate_found <- find_duplicates(as.list(gbov), value, type)
-    if(is.null(duplicate_found)) {
-      next()
-    } else if(find_duplicates(as.list(gbov), value, type)) {
+    if(sum(unlist(lapply(as.list(gbov), function(x) identical(x, value))))) {
       next()
     } else {
-      assign(toString(gbov_index), list(hash, value), envir=gbov)
+      assign(toString(gbov_index), value, envir=gbov)
       values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
       assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
     }

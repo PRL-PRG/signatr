@@ -136,18 +136,6 @@ values_only <- function(gbov) {
 }
 
 #' @export
-find_duplicates <- function(db, val, ty) {
-  if (exclude(val, ty)) {
-    TRUE
-    ## tryCatch(
-    ##   sum(unlist(lapply(db, function(x) isTRUE(all.equal(x[[2]], val))))),
-    ##   error = function(e) 1 # as.POSIXct.default error for certain types of objects;if errors, we chuck it
-    ## )
-  } else {
-    sum(unlist(lapply(db, function(x) identical(x[[2]], val))))
-  }
-}
-
 exclude <- function(val, ty) {
   ## exclude <- list("closure", "language", "environment")
 
