@@ -155,7 +155,7 @@ exclude <- function(val, ty) {
     ty_list <- rapply(val, typeof)
     sum("closure" %in% ty_list)
   } else if (ty == "pairlist") {
-    ty_list <- rapply(as.list(val), typeof)
+    ty_list <- rapply(object = as.list(val), f = typeof)
     sum("closure" %in% ty_list)
   } else {
     ty == "closure"
