@@ -25,12 +25,10 @@ tictoc::tic("merging started")
 cat(sprintf("merging %s files started ...\n\n", length(values_files)))
 
 
-
-
 gbov <- new.env(parent=emptyenv())
 meta <- data.frame()
 
-gbov_index <- 1
+assign("dummy", "dummy", envir = gbov)
 
 for (i in seq_along(values_files)) {
   values_list <- readRDS(paste0(run_dir, "/", values_files[[i]]))
@@ -38,29 +36,22 @@ for (i in seq_along(values_files)) {
     next
   }
 
-  unique_values <- unique(values_list)
-
   values_sources_df <- readRDS(paste0(run_dir, "/", values_sources_files[[i]]))
   sources_df <- readRDS(paste0(run_dir, "/", sources_files[[i]]))
 
-  for(j in seq_along(unique_values)) {
-    hash <- unique_values[[j]][[1]]
-    value <- unique_values[[j]][[3]]
-    type <- unique_values[[j]][[2]]
-
-    if(exclude(value, type)) {
-      #TODO: remove corresponding metadata?
-      next()
-    }
+  for(value in values_list) {
+    hash <- value[[1]]
+    val <- value[[3]]
+    type <- value[[2]]
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    if(sum(unlist(lapply(as.list(gbov), function(x) identical(x, value))))) {
-      next()
+    duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
+    if(length(duplicate) == 0) {
+      assign(hash, val, envir=gbov)
     } else {
-      assign(toString(gbov_index), value, envir=gbov)
-      values_sources_df[values_sources_df$value_hash == hash, "index"] <- gbov_index
-      assign("gbov_index", gbov_index + 1, envir=.GlobalEnv)
+      duplicate_hash <- attr(duplicate, "names")
+      values_sources_df[values_sources_df$value_hash == hash, "value_hash"] <- duplicate_hash
     }
   }
 

@@ -28,7 +28,8 @@ length.gbov <- function(gbov) {
 #' @export
 get_random_value <- function (gbov) {
   random_index <- sample.int(length(gbov), 1)
-  get(toString(random_index), envir = gbov)
+  as.list(gbov)[[random_index]]
+  ## get(toString(random_index), envir = gbov)
 }
 
 #' param: type is a string representing a type e.g. "list", "double", etc
@@ -37,10 +38,12 @@ get_random_value <- function (gbov) {
 get_random_value_by_type <- function (gbov, meta, type) {
   match_df <- meta[meta$type == type,]
   random_index <- sample.int(nrow(match_df), 1)
-  gbov_index <- match_df[random_index, "index"]
-  get(toString(gbov_index), gbov)
-}
+  hash <- match_df[random_index,]$value_hash
+  get(hash, gbov)
 
+  ## gbov_index <- match_df[random_index, "index"]
+  ## get(toString(gbov_index), gbov)
+}
 
 #' param: package_name is a string representing package_name e.g. "stringr", "dplyr", etc"
 #' Get a random value from specified package
@@ -56,38 +59,36 @@ get_random_value_by_package <- function (gbov, meta, package_name, not_by = FALS
     print(paste0("no value ", if(not_by) "not from " else "from ", package_name))
   } else {
     random_index <- sample.int(nrow(match_df), 1)
-    gbov_index <- match_df[random_index, "index"]
-    get(toString(gbov_index), gbov)
+    hash <- match_df[random_index,]$value_hash
+    get(hash, gbov)
+    ## gbov_index <- match_df[random_index, "index"]
+    ## get(toString(gbov_index), gbov)
   }
 }
 
-# Add a new value to gbov (in-place modification) and metadatabase (return new)
-# @param gbov
-# @param val 
-# @return a new metadatabase dataframe
+# Adds a new value to gbov and update meta accordingly. The new gbov and meta are saved in a RDS file. TODO: Saving each time a value is added is too costly.
 #' @export
 add_value <- function(gbov, meta, val) {
-  if(is.environment(val)){
-    hash <- digest::sha1(as.list(val))
-  } else {
-    hash <- sha1(val)
+  type <- typeof(val)
+
+  if(exclude(val, type)) {
+    return()
   }
 
-  gbov_index <- length(gbov) + 1
-
-  if(nrow(meta[meta$value_hash == hash,]) == 0) {
-    new_val <- data.frame(source_hash = NA, count = 1, index = gbov_index, type = typeof(val), package_name = NA, fun_name = NA, pos = NA)
-    new_meta <- rbind(meta, new_val)
-    assign(toString(gbov_index), val, envir = gbov)
-    new_meta
+  hash <- sha1(deparse(val))
+  # TODO: assumption is length(gbov) != 0 
+  duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
+  if(length(duplicate) == 0) {
+    assign(hash, val, envir=gbov)
+    new_meta <- data.frame(value_hash = hash, source_hash = NA,  count = 1, index = NA, type = type, package_name = NA, fun_name = NA, pos = NA)
+    meta <- rbind(meta, new_meta)
   } else {
-    meta
+    duplicate_hash <- attr(duplicate, "names")
+    meta[meta$value_hash == hash,]$count <- meta[meta$value_hash == hash,]$count + 1
+    meta[meta$value_hash == hash,]$type <- type 
   }
-}
 
-#' @export
-print <- function (gbov, ...) {
-  UseMethod("print", gbov)
+  save(gbov, meta)
 }
 
 #' @export
@@ -95,7 +96,6 @@ print.gbov <- function(gbov) {
  as.list(gbov)
 }
 
-# Prints the first 10 values of gbov
 #' @export
 less <- function (gbov, ...) {
   UseMethod("less", gbov)
@@ -106,7 +106,6 @@ less.gbov <- function(gbov) {
   as.list(gbov)[1:10]
 }
 
-
 #' Saves gbov at specified directory by specified name
 #' if new = FALSE, current gbov.RDS is overwritten
 #' @export
@@ -115,37 +114,30 @@ save <- function (gbov, ...) {
 }                                        #
 
 #' @export
-save.gbov <- function(gbov, meta, dir = ".", gbov_name, meta_name) {
+save.gbov <- function(gbov, meta, dir = ".") {
   if (!dir.exists(dir))
     dir.create(dir, recursive=TRUE)
 
-  saveRDS(gbov, file = paste0(dir, "/", gbov_name, ".RDS"))
-  saveRDS(meta, file = paste0(dir, "/", meta_name, ".RDS"))
+  saveRDS(gbov, file = paste0(dir, "/", "new_gbov", ".RDS"))
+  saveRDS(meta, file = paste0(dir, "/", "new_meta", ".RDS"))
 }
 
 #' @export
 unique.gbov <- function(gbov) {
-  lgbov <- as.list(gbov)
-  vgbov <- lapply(lgbov, function(x) x[[2]])
-  unique(vgbov)
-}
-
-#' @export
-values_only <- function(gbov) {
-  vgbov <- lapply(as.list(gbov), function(x) x[[2]])
+  unique(as.list(gbov))
 }
 
 #' @export
 exclude <- function(val, ty) {
-  ## exclude <- list("closure", "language", "environment")
+  exclude_list <- list("closure", "language", "environment")
 
   if (ty %in%  list("list", "expression")) {
     ty_list <- rapply(val, typeof)
-    sum("closure" %in% ty_list)
+    sum(ty_list %in% exclude_list)
   } else if (ty == "pairlist") {
     ty_list <- rapply(object = as.list(val), f = typeof)
-    sum("closure" %in% ty_list)
+    sum(ty_list %in% exclude_list)
   } else {
-    ty == "closure"
+    ty %in% exclude_list
   }
 }

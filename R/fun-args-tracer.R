@@ -17,18 +17,11 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   store_val <- function(val, pos) {
     ty <- typeof(val)
-    ## if(check_exclude(val, ty)) {
-    ##   return()
-    ## }
-
-    ## if (check_na(val)) {
-    ##   value_hash <- na_hash(ty)
-    ## } else {
-    ##   value_hash <- sha1(deparse(val))
-    ## }
+    if(exclude(val, ty)) {
+      return()
+    }
 
     value_hash <- sha1(deparse1(val))
-
     if (!exists(value_hash, envir=values)) {
       value <- list(value_hash, ty, val)
       assign(value_hash, value, envir=values)
@@ -129,7 +122,6 @@ process_traced_data <- function(context, application) {
         data.frame(value_hash, source_hash, count)
       })
   })
-    ## values <- lapply(values, function(v) v[[3]])
     values_sources_df$index <- match(values_sources_df$value_hash, names(values))
   }
   data <- list(
