@@ -36,6 +36,10 @@ get_random_value <- function (gbov) {
 #' Get a random value of specified type
 #' @export
 get_random_value_by_type <- function (gbov, meta, type) {
+  exclude_list <- list("closure", "language", "environment")
+  if(type %in% exclude_list) {
+    stop("excluded type")
+  }
   match_df <- meta[meta$type == type,]
   random_index <- sample.int(nrow(match_df), 1)
   hash <- match_df[random_index,]$value_hash
@@ -76,18 +80,20 @@ add_value <- function(gbov, meta, val) {
   }
 
   hash <- sha1(deparse(val))
-  # TODO: assumption is length(gbov) != 0 
-  duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
-  if(length(duplicate) == 0) {
+  if (length(gbov) == 0) {
     assign(hash, val, envir=gbov)
-    new_meta <- data.frame(value_hash = hash, source_hash = NA,  count = 1, index = NA, type = type, package_name = NA, fun_name = NA, pos = NA)
-    meta <- rbind(meta, new_meta)
   } else {
-    duplicate_hash <- attr(duplicate, "names")
-    meta[meta$value_hash == hash,]$count <- meta[meta$value_hash == hash,]$count + 1
-    meta[meta$value_hash == hash,]$type <- type 
-  }
+    duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
 
+    if(length(duplicate) == 0) {
+      assign(hash, val, envir=gbov)
+      new_meta <- data.frame(value_hash = hash, source_hash = NA,  count = 1, index = 0, type = type, package_name = NA, fun_name = NA, pos = NA)
+      meta <- rbind(meta, new_meta)
+    } else {
+      duplicate_hash <- attr(duplicate, "names")
+      meta[meta$value_hash == hash,]$count <- meta[meta$value_hash == hash,]$count + 1
+    }
+  }
   save(gbov, meta)
 }
 
