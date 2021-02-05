@@ -134,7 +134,8 @@ save.gbov <- function(gbov, meta, dir = ".") {
 
 #' @export
 unique.gbov <- function(gbov) {
-  unique(as.list(gbov))
+  ugbov <- unique(as.list(gbov))
+  class(ugbov) <- c("gbov", class(ugbov))
 }
 
 #' @export

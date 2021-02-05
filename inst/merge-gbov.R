@@ -25,7 +25,8 @@ tictoc::tic("merging started")
 cat(sprintf("merging %s files started ...\n\n", length(values_files)))
 
 
-gbov <- new.env(parent=emptyenv())
+## gbov <- new.env(parent=emptyenv())
+gbov <- list()
 meta <- data.frame()
 
 for (i in seq_along(values_files)) {
@@ -44,9 +45,19 @@ for (i in seq_along(values_files)) {
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    if(!exists(hash, envir=gbov)) {
-      assign(hash, val, envir=gbov)
-    } 
+    if(length(gbov) == 0) {
+      gbov <- c(val, gbov)
+    } else {
+      if(sum(unlist(lapply(names(gbov), function(x) x == hash)))) {
+        next
+      } else {
+        gbov <- c(val, gbov)
+      }
+    }
+
+    ## if(!exists(hash, envir=gbov)) {
+    ##   assign(hash, val, envir=gbov)
+    ## }
     ## if(length(gbov) == 0) {
     ##   assign(hash, val, envir=gbov)
     ## } else {
@@ -65,8 +76,16 @@ for (i in seq_along(values_files)) {
   meta <- rbind(meta, joined)
 }
 
+ugbov <- unique(gbov)
+
+duplicates <- which(duplicated(gbov))
+for(id in duplicates) {
+  dup_hash <- names(gbov[id])
+  meta <- meta[!meta$value_hash == dup_hash, ] 
+}
+
 cat(sprintf("merging done.\n\n"))
 tictoc::toc()
 
 saveRDS(meta, file = paste0(run_dir, "/", "merged-meta.RDS"))
-saveRDS(gbov, file = paste0(run_dir, "/", "merged-gbov.RDS"))
+saveRDS(ugbov, file = paste0(run_dir, "/", "merged-gbov.RDS"))
