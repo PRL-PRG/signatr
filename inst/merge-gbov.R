@@ -44,20 +44,20 @@ for (i in seq_along(values_files)) {
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    ## if(!exists(hash, envir=gbov)) {
-    ##   assign(hash, val, envir=gbov)
-    ## } 
-    if(length(gbov) == 0) {
+    if(!exists(hash, envir=gbov)) {
       assign(hash, val, envir=gbov)
-    } else {
-      duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
-      if(length(duplicate) == 0) {
-        assign(hash, val, envir=gbov)
-      } else {
-        duplicate_hash <- attr(duplicate, "names")
-        values_sources_df[values_sources_df$value_hash == hash, "value_hash"] <- duplicate_hash
-      }
-    }
+    } 
+    ## if(length(gbov) == 0) {
+    ##   assign(hash, val, envir=gbov)
+    ## } else {
+    ##   duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
+    ##   if(length(duplicate) == 0) {
+    ##     assign(hash, val, envir=gbov)
+    ##   } else {
+    ##     duplicate_hash <- attr(duplicate, "names")
+    ##     values_sources_df[values_sources_df$value_hash == hash, "value_hash"] <- duplicate_hash
+    ##   }
+    ## }
   }
 
   joined <- left_join(values_sources_df, sources_df, by = "source_hash")

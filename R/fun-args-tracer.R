@@ -17,9 +17,9 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   store_val <- function(val, pos) {
     ty <- typeof(val)
-    if(exclude(val, ty)) {
-      return()
-    }
+    ## if(exclude(val, ty)) {
+    ##   return()
+    ## }
 
     value_hash <- sha1(deparse1(val))
     if (!exists(value_hash, envir=values)) {
