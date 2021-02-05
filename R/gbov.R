@@ -21,7 +21,12 @@ load_meta <- function(path) {
 
 #' @export
 length.gbov <- function(gbov) {
-  length(as.list(gbov))
+  if(sum(class(gbov) == "list")) {
+    class(gbov) <- "list"
+    length(gbov)
+  } else {
+    length(as.list(gbov))
+  }
 }
 
 # Get a random value from the gbov
@@ -71,31 +76,30 @@ get_random_value_by_package <- function (gbov, meta, package_name, not_by = FALS
 }
 
 # Adds a new value to gbov and update meta accordingly. The new gbov and meta are saved in a RDS file. TODO: Saving each time a value is added is too costly.
-#' @export
-add_value <- function(gbov, meta, val) {
-  type <- typeof(val)
+## add_value <- function(gbov, meta, val) {
+##   type <- typeof(val)
 
-  if(exclude(val, type)) {
-    return()
-  }
+##   if(exclude(val, type)) {
+##     return()
+##   }
 
-  hash <- sha1(deparse(val))
-  if (length(gbov) == 0) {
-    assign(hash, val, envir=gbov)
-  } else {
-    duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
+##   hash <- sha1(deparse(val))
+##   if (length(gbov) == 0) {
+##     assign(hash, val, envir=gbov)
+##   } else {
+##     duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
 
-    if(length(duplicate) == 0) {
-      assign(hash, val, envir=gbov)
-      new_meta <- data.frame(value_hash = hash, source_hash = NA,  count = 1, index = 0, type = type, package_name = NA, fun_name = NA, pos = NA)
-      meta <- rbind(meta, new_meta)
-    } else {
-      duplicate_hash <- attr(duplicate, "names")
-      meta[meta$value_hash == hash,]$count <- meta[meta$value_hash == hash,]$count + 1
-    }
-  }
-  save(gbov, meta)
-}
+##     if(length(duplicate) == 0) {
+##       assign(hash, val, envir=gbov)
+##       new_meta <- data.frame(value_hash = hash, source_hash = NA,  count = 1, index = 0, type = type, package_name = NA, fun_name = NA, pos = NA)
+##       meta <- rbind(meta, new_meta)
+##     } else {
+##       duplicate_hash <- attr(duplicate, "names")
+##       meta[meta$value_hash == hash,]$count <- meta[meta$value_hash == hash,]$count + 1
+##     }
+##   }
+##   save(gbov, meta)
+## }
 
 #' @export
 print.gbov <- function(gbov) {
@@ -137,12 +141,8 @@ unique.gbov <- function(gbov) {
 exclude <- function(val, ty) {
   exclude_list <- list("closure", "language", "environment")
 
-  if (ty %in%  list("list", "expression")) {
-    ty_list <- rapply(val, typeof)
-    sum(ty_list %in% exclude_list)
-  } else if (ty == "pairlist") {
-    ty_list <- rapply(object = as.list(val), f = typeof)
-    sum(ty_list %in% exclude_list)
+  if (ty %in%  list("list", "expression", "pairlist")) {
+    sum(lapply(unlist(val), typeof) %in% exclude_list)
   } else {
     ty %in% exclude_list
   }
