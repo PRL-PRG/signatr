@@ -28,6 +28,8 @@ cat(sprintf("merging %s files started ...\n\n", length(values_files)))
 gbov <- new.env(parent=emptyenv())
 meta <- data.frame()
 
+assign("dummy", "dummy", envir=gbov)
+
 for (i in seq_along(values_files)) {
   values_list <- readRDS(paste0(run_dir, "/", values_files[[i]]))
   if(length(values_list) == 0) {
@@ -44,22 +46,18 @@ for (i in seq_along(values_files)) {
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
 
-    ## if(!exists(hash, envir=gbov)) {
+    ## if(length(gbov) == 0) {
     ##   assign(hash, val, envir=gbov)
-    ## } 
-    if(length(gbov) == 0) {
+    ## } else {
+    duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
+    if(length(duplicate) == 0) {
       assign(hash, val, envir=gbov)
     } else {
-      duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
-      if(length(duplicate) == 0) {
-        assign(hash, val, envir=gbov)
-      } else {
-        duplicate_hash <- attr(duplicate, "names")
-        values_sources_df[values_sources_df$value_hash == hash, "value_hash"] <- duplicate_hash
-      }
+      duplicate_hash <- attr(duplicate, "names")
+      values_sources_df[values_sources_df$value_hash == hash, "value_hash"] <- duplicate_hash
     }
   }
-
+  ## }
   joined <- left_join(values_sources_df, sources_df, by = "source_hash")
 
   meta <- rbind(meta, joined)
