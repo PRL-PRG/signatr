@@ -38,45 +38,18 @@ for (i in seq_along(values_files)) {
   values_sources_df <- readRDS(paste0(run_dir, "/", values_sources_files[[i]]))
   sources_df <- readRDS(paste0(run_dir, "/", sources_files[[i]]))
 
-  for(value in values_list) {
-    hash <- value[[1]]
-    val <- value[[3]]
-    type <- value[[2]]
+  values_only <- lapply(values_list, function(x) x[[3]])
+  gbov <- append(gbov, values_only, after = length(gbov))
+
+  for(elem in values_list) {
+    hash <- elem[[1]]
+    type <- elem[[2]]
 
     values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
-
-    if(length(gbov) == 0) {
-      gbov <- c(val, gbov)
-    } else {
-      if(sum(unlist(lapply(names(gbov), function(x) x == hash)))) {
-        next
-      } else {
-        gbov <- c(val, gbov)
-      }
-    }
-
-    ## if(!exists(hash, envir=gbov)) {
-    ##   assign(hash, val, envir=gbov)
-    ## }
-    ## if(length(gbov) == 0) {
-    ##   assign(hash, val, envir=gbov)
-    ## } else {
-    ##   duplicate <- which(unlist(lapply(as.list(gbov), function(x) identical(x, val))))
-    ##   if(length(duplicate) == 0) {
-    ##     assign(hash, val, envir=gbov)
-    ##   } else {
-    ##     duplicate_hash <- attr(duplicate, "names")
-    ##     values_sources_df[values_sources_df$value_hash == hash, "value_hash"] <- duplicate_hash
-    ##   }
-    ## }
   }
-
   joined <- left_join(values_sources_df, sources_df, by = "source_hash")
-
   meta <- rbind(meta, joined)
 }
-
-ugbov <- unique(gbov)
 
 duplicates <- which(duplicated(gbov))
 for(id in duplicates) {
@@ -88,4 +61,4 @@ cat(sprintf("merging done.\n\n"))
 tictoc::toc()
 
 saveRDS(meta, file = paste0(run_dir, "/", "merged-meta.RDS"))
-saveRDS(ugbov, file = paste0(run_dir, "/", "merged-gbov.RDS"))
+saveRDS(unique(gbov), file = paste0(run_dir, "/", "merged-gbov.RDS"))

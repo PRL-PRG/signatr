@@ -106,7 +106,7 @@ process_traced_data <- function(context, application) {
   values_sources <- data$values_sources
 
   values <- as.list(values)
-  if(length(values) == 0) {
+  if(length(as.list(values)) == 0) {
     sources_df <- data.frame(character(), character(), character(), numeric())
     colnames(sources_df) <- c("source_hash", "package_name", "fun_name", "pos")
     values_sources_df <- data.frame(character(), character(), numeric(), integer())
@@ -159,25 +159,25 @@ trace <- function(package, path, code) {
   invisible(result)
 }
 
-na_hash <- function(ty) {
-  if(ty == "double") {
-    sha1(as.numeric(NA))
-  } else if (ty == "integer") {
-    sha1(NA_integer_)
-  } else if (ty == "complex") {
-    sha1(NA_complex_)
-  } else if (ty == "real") {
-    sha1(NA_real_)
-  } else if (ty == "character") {
-    sha1(NA_character_)
-  } else if (ty == "data.frame") {
-    sha1(as.data.frame(NA))
-  } else if (ty == "list") {
-    sha1(as.list(NA))
-  } else {
-    sha1(NA)
-  }
-}
+## na_hash <- function(ty) {
+##   if(ty == "double") {
+##     sha1(as.numeric(NA))
+##   } else if (ty == "integer") {
+##     sha1(NA_integer_)
+##   } else if (ty == "complex") {
+##     sha1(NA_complex_)
+##   } else if (ty == "real") {
+##     sha1(NA_real_)
+##   } else if (ty == "character") {
+##     sha1(NA_character_)
+##   } else if (ty == "data.frame") {
+##     sha1(as.data.frame(NA))
+##   } else if (ty == "list") {
+##     sha1(as.list(NA))
+##   } else {
+##     sha1(NA)
+##   }
+## }
 
 ## check_na <- function(val) {
 ##   if(length(val) == 1) {

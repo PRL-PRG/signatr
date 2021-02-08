@@ -6,7 +6,7 @@
 #' @export
 load_gbov <- function(path) {
   gbov <- readRDS(path)
-  if((class(gbov) != "gbov")[[1L]]) class(gbov) <- c("gbov", class(gbov))
+  ## if((class(gbov) != "gbov")[[1L]]) class(gbov) <- c("gbov", class(gbov))
   gbov
 }
 
@@ -21,12 +21,7 @@ load_meta <- function(path) {
 
 #' @export
 length.gbov <- function(gbov) {
-  if(sum(class(gbov) == "list")) {
-    class(gbov) <- "list"
-    length(gbov)
-  } else {
-    length(as.list(gbov))
-  }
+length(gbov)
 }
 
 # Get a random value from the gbov
@@ -103,7 +98,7 @@ get_random_value_by_package <- function (gbov, meta, package_name, not_by = FALS
 
 #' @export
 print.gbov <- function(gbov) {
- as.list(gbov)
+  gbov
 }
 
 #' @export
@@ -113,7 +108,7 @@ less <- function (gbov, ...) {
 
 #' @export
 less.gbov <- function(gbov) {
-  as.list(gbov)[1:10]
+  gbov[1:10]
 }
 
 #' Saves gbov at specified directory by specified name
@@ -134,8 +129,8 @@ save.gbov <- function(gbov, meta, dir = ".") {
 
 #' @export
 unique.gbov <- function(gbov) {
-  ugbov <- unique(as.list(gbov))
-  class(ugbov) <- c("gbov", class(ugbov))
+  unique(gbov)
+  ## class(ugbov) <- c("gbov", class(ugbov))
 }
 
 #' @export
