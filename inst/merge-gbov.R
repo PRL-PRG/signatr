@@ -41,12 +41,16 @@ for (i in seq_along(values_files)) {
   values_only <- lapply(values_list, function(x) x[[3]])
   gbov <- append(gbov, values_only, after = length(gbov))
 
-  for(elem in values_list) {
+  lapply(values_list, function(elem) {
     hash <- elem[[1]]
     type <- elem[[2]]
+    values_sources_df[values_sources_df$value_hash == hash, "type"] <- type})
+  ## for(elem in values_list) {
+  ##   hash <- elem[[1]]
+  ##   type <- elem[[2]]
 
-    values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
-  }
+  ##   values_sources_df[values_sources_df$value_hash == hash, "type"] <- type
+  ## }
   joined <- left_join(values_sources_df, sources_df, by = "source_hash")
   meta <- rbind(meta, joined)
 }

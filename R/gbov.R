@@ -137,9 +137,9 @@ unique.gbov <- function(gbov) {
 exclude <- function(val, ty) {
   exclude_list <- list("closure", "language", "environment")
 
-  if (ty %in%  list("list", "expression", "pairlist")) {
-    sum(lapply(unlist(val), typeof) %in% exclude_list)
+  if(any(list("list", "expression", "pairlist") == ty)) {
+    sum(lapply(unlist(val, use.names = FALSE), typeof) %in% exclude_list)
   } else {
-    ty %in% exclude_list
+    any(exclude_list == ty)
   }
 }
