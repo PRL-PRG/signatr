@@ -21,8 +21,8 @@ trace_exit_callback <- function(context, application, package, func, call) {
     ## }
     value_hash <- sha1(val)
     if (!exists(value_hash, envir=values)) {
-      value_ser <- serialize(val, connection=NULL, ascii=FALSE)
-      value <- list(value_hash, typeof(val), value_ser)
+      ## value_ser <- serialize(val, connection=NULL, ascii=FALSE)
+      value <- list(value_hash, typeof(val), val)
       assign(value_hash, value, envir=values)
     }
 

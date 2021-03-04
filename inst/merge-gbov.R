@@ -15,9 +15,9 @@ if (!dir.exists(run_dir)) {
 
 files <- list.files(path = run_dir, pattern = "values.RDS$", recursive = TRUE)
 
-howmany <- length(files)
+num_files <- length(files)
 
-cat(sprintf("Merging %s values.RDS files:\n\n", howmany))
+cat(sprintf("Merging %s values.RDS files:\n\n", num_files))
 
 gbov <- list()
 
@@ -26,4 +26,4 @@ for (file in files) {
   gbov <- c(gbov, values)
 }
 
-saveRDS(unique(gbov), file = paste0(run_dir, "/", "gbov.RDS"))
+saveRDS(unique(gbov), file = paste0(run_dir, "/", "merged-gbov.RDS"))
