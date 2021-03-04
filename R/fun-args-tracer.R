@@ -19,7 +19,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
     ## if(class(val) != "instrumentr_parameter") {
     ##   pos <- 0 # return value pos
     ## }
-    value_hash <- sha1(val)
+    value_hash <- sha1(deparse1(val))
     if (!exists(value_hash, envir=values)) {
       ## value_ser <- serialize(val, connection=NULL, ascii=FALSE)
       value <- list(value_hash, typeof(val), val)
