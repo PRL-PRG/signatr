@@ -45,6 +45,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   return_val <- get_result(call)
   store_val(return_val, pos = 0)
+  ## record::add_val(return_val)
 
   for (param in params) {
     pos <- get_position(param) + 1
@@ -62,9 +63,10 @@ trace_exit_callback <- function(context, application, package, func, call) {
     if (!is_evaluated(arg)) {
       next
     }
-    arg_value <- get_result(arg)
+    arg_val <- get_result(arg)
 
-    store_val(arg_value, pos = pos)
+    store_val(arg_val, pos = pos)
+    ## record::add_val(arg_val)
   }
 }
 
@@ -136,7 +138,7 @@ save_fun_args_data <- function(data, path) {
   # store data using saveRDS
   saveRDS(data$values, file = paste0(path, "/","values.RDS"))
   saveRDS(data$sources, file = paste0(path, "/","sources.RDS"))
-  saveRDS(data$values_sources, file = paste0(path, "/","values_sources.RDS"))
+  saveRDS(data$values_sources, file = paste0(path, "/","count.RDS"))
 }
 
 #' @export
