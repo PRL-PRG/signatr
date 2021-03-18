@@ -18,6 +18,8 @@ val_files <- list.files(path = run_dir, pattern = "values.RDS", recursive = TRUE
 ## src_files <- list.files(path = run_dir, pattern = "sources.RDS", recursive = TRUE)
 count_files <- list.files(path = run_dir, pattern = "count.RDS", recursive = TRUE)
 
+stopifnot(length(val_files) == length(count_files))
+
 tictoc::tic("Collecting started ...\n\n")
 
 gbov <- new.env(parent=emptyenv())
