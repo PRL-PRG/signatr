@@ -32,11 +32,11 @@ for (i in seq_along(val_files)) {
   }
 
   for(val in val_list) {
-    hash <- val$hash
+    hash <- val[[1]]
 
     if(!exists(hash, envir = gbov)) {
-      assign(hash, val$value, envir=gbov)
-      meta_df[meta_df$value_hash == hash, "type"] <- val$type
+      assign(hash, val[[3]], envir=gbov)
+      meta_df[meta_df$value_hash == hash, "type"] <- val[[2]]
       ## meta_df[meta_df$value_hash == hash, "source_hash"] <- sub(":.*", "", meta_df$source_hash[[1]])
       meta <- rbind(meta, meta_df[meta_df$value_hash == hash,])
     } else {
