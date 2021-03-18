@@ -138,7 +138,7 @@ save_fun_args_data <- function(data, path) {
   # store data using saveRDS
   saveRDS(data$values, file = paste0(path, "/","values.RDS"))
   saveRDS(data$sources, file = paste0(path, "/","sources.RDS"))
-  saveRDS(data$values_sources, file = paste0(path, "/","count.RDS"))
+  saveRDS(data$values_sources, file = paste0(path, "/","counts.RDS"))
 }
 
 #' @export
