@@ -18,7 +18,8 @@ val_files <- list.files(path = run_dir, pattern = "values.RDS", recursive = TRUE
 ## src_files <- list.files(path = run_dir, pattern = "sources.RDS", recursive = TRUE)
 count_files <- list.files(path = run_dir, pattern = "counts.RDS", recursive = TRUE)
 
-tictoc::tic("Collecting started ...\n\n")
+tictoc::tic("Collecting started:")
+cat(sprintf("Collecting started ...\n\n"))
 
 gbov <- new.env(parent=emptyenv())
 meta <- data.frame(value_hash = character(), source_hash = character(), count = integer(), type = character())
@@ -50,4 +51,5 @@ print(paste0("total of ", length(as.list(gbov)), " unique values are collected")
 saveRDS(gbov, file = paste0(run_dir, "/gbov.RDS"))
 saveRDS(meta, file = paste0(run_dir, "/meta.RDS"))
 
-tictoc::toc("Collecting done ...")
+cat(sprintf("Collecting done.\n\n"))
+tictoc::toc("Collecting done.")
