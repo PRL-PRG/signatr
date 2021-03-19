@@ -1,0 +1,70 @@
+---
+title: "unique value analysis"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(kableExtra)
+library(zoo)
+library(tidyverse)
+
+gbov <- readRDS("/var/lib/R/project-signatR/docker-home-hyeyoung/signatr-experiment/run16/signatr-gbov/gbov.RDS") # environment
+meta <- readRDS("/var/lib/R/project-signatR/docker-home-hyeyoung/signatr-experiment/run16/signatr-gbov/meta.RDS") # deta.frame
+
+kable(meta) %>%
+  kable_styling(bootstrap_options = "striped", font_size = 10, full_width = FALSE)
+
+meta_tibble <- as_tibble(meta)
+gbov_list <- as.list(gbov)
+
+meta_tibble$source_hash <- unlist(lapply(meta_tibble$source_hash, function(x) sub(":.*", "", x)))
+
+#sample <- meta_tibble[1:25,]
+#sample <- rbind(sample, data.frame(value_hash = "1cb4edfe0419379c4621f0bafe59cab9f69832a2", source_hash = "cluster", count = -1, index = -1, type = "double"))
+#sample_grouped <- sample %>% 
+#  group_by(value_hash, source_hash, type) %>%
+#  summarise(count = sum(count))
+
+#by_package <- sample_grouped %>%
+#  group_by(source_hash) %>%
+#  summarise(num_unique = n(), type = type)
+
+
+meta_grouped <- meta_tibble %>% 
+  group_by(value_hash, source_hash, type) %>%
+  summarize(count = sum(count))
+
+g <- ggplot(meta_grouped, aes(source_hash)) + 
+  geom_bar(aes(fill = type))
+
+meta_unhashed <- mutate(meta_grouped,
+  val = I(list(get(value_hash, gbov)))
+)
+
+#false_db <- meta_tibble[meta_tibble$value_hash == "68773c158f601bf0748847665c0a46e974f0e085",]
+#false_db <- meta_grouped[meta_grouped$value_hash == digest::sha1(FALSE),]
+
+
+```
+
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
