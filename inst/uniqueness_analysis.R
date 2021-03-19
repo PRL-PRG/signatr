@@ -16,7 +16,7 @@ if (!dir.exists(run_dir)) {
 
 val_files <- list.files(path = run_dir, pattern = "values.RDS", recursive = TRUE)
 ## src_files <- list.files(path = run_dir, pattern = "sources.RDS", recursive = TRUE)
-count_files <- list.files(path = run_dir, pattern = "count.RDS", recursive = TRUE)
+count_files <- list.files(path = run_dir, pattern = "counts.RDS", recursive = TRUE)
 
 tictoc::tic("Collecting started ...\n\n")
 
