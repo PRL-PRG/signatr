@@ -45,7 +45,6 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   return_val <- get_result(call)
   store_val(return_val, pos = 0)
-  ## record::add_val(return_val)
 
   for (param in params) {
     pos <- get_position(param) + 1
@@ -66,7 +65,6 @@ trace_exit_callback <- function(context, application, package, func, call) {
     arg_val <- get_result(arg)
 
     store_val(arg_val, pos = pos)
-    ## record::add_val(arg_val)
   }
 }
 
