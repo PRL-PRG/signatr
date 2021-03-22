@@ -1,5 +1,5 @@
 ---
-title: "unique value analysis"
+title: "unique value analysis for 16 packages"
 output: html_document
 ---
 
@@ -12,13 +12,13 @@ library(tidyverse)
 gbov <- readRDS("/var/lib/R/project-signatR/docker-home-hyeyoung/signatr-experiment/run16/signatr-gbov/gbov.RDS") # environment
 meta <- readRDS("/var/lib/R/project-signatR/docker-home-hyeyoung/signatr-experiment/run16/signatr-gbov/meta.RDS") # deta.frame
 
-kable(meta) %>%
-  kable_styling(bootstrap_options = "striped", font_size = 10, full_width = FALSE)
+#kable(meta16) %>%
+#  kable_styling(bootstrap_options = "striped", font_size = 10, full_width = FALSE)
 
-meta_tibble <- as_tibble(meta)
-gbov_list <- as.list(gbov)
+meta_tib <- as_tibble(meta)
+gbov_ls <- as.list(gbov)
 
-meta_tibble$source_hash <- unlist(lapply(meta_tibble$source_hash, function(x) sub(":.*", "", x)))
+meta_tib$source_hash <- unlist(lapply(meta_tib$source_hash, function(x) sub(":.*", "", x)))
 
 #sample <- meta_tibble[1:25,]
 #sample <- rbind(sample, data.frame(value_hash = "1cb4edfe0419379c4621f0bafe59cab9f69832a2", source_hash = "cluster", count = -1, index = -1, type = "double"))
@@ -31,12 +31,15 @@ meta_tibble$source_hash <- unlist(lapply(meta_tibble$source_hash, function(x) su
 #  summarise(num_unique = n(), type = type)
 
 
-meta_grouped <- meta_tibble %>% 
+meta_grouped <- meta_tib %>% 
   group_by(value_hash, source_hash, type) %>%
   summarize(count = sum(count))
 
 g <- ggplot(meta_grouped, aes(source_hash)) + 
-  geom_bar(aes(fill = type))
+  geom_bar(aes(fill = type)) +
+ # theme_minimal() +
+  ggtitle("Unique Value Analysis per Package") + 
+  xlab("Package") + ylab("Num of unique values")
 
 meta_unhashed <- mutate(meta_grouped,
   val = I(list(get(value_hash, gbov)))
