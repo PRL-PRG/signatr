@@ -9,7 +9,6 @@ test_that("test value tracing", {
   expect_equal(record::have_seen("AB"), TRUE)
   expect_equal(record::have_seen(FALSE), TRUE)
   expect_equal(record::have_seen(0), FALSE)
-  expect_equal(record::size_db(), 7)
 
   record::close_db()
 })

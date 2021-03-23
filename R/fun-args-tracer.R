@@ -34,7 +34,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
 }
 
 #' @export
-#' @importFrom instrumentr create_context
+#' @importFrom instrumentr create_context trace_code get_data
 #' @importFrom instrumentr set_application_load_callback set_application_unload_callback
 #' @importFrom record open_db close_db
 trace_fun_args <- function(package, code, substituted = FALSE) {
@@ -46,7 +46,7 @@ trace_fun_args <- function(package, code, substituted = FALSE) {
   if(!substituted) {code <- substitute(code)}
 
   set_application_load_callback(context, function(context, application) {
-    open_db(paste0("tests/db/", package), create = TRUE)
+    open_db(paste0("../tests/db", package), create = TRUE)
   })
 
   set_application_unload_callback(context, function(context, application) {
