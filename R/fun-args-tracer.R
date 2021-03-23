@@ -46,7 +46,7 @@ trace_fun_args <- function(package, code, substituted = FALSE) {
   if(!substituted) {code <- substitute(code)}
 
   set_application_load_callback(context, function(context, application) {
-    open_db(paste0("../tests/db", package), create = TRUE)
+    open_db(paste0("../tests/db/", package), create = TRUE)
   })
 
   set_application_unload_callback(context, function(context, application) {
