@@ -10,7 +10,7 @@ if (length(args) < 1) {
   q(status=1)
 }
 
-functions_df <- read.csv(arg[1])
+functions_df <- read.csv(args[1])
 
 ## package_name <- paste0("/mnt/nvme1/R/project-signatR/run/package-metadata/", args[1])
 ## package_df <- functions_df[functions_df$package == package_name, ]
@@ -70,5 +70,10 @@ for(i in seq_along(fun_list)) {
   }
 }
 
+end <- close_db()
+
+if(!is.null(end)) {
+  stop("could not close db")
+}
 
 write.csv(run_results, "signatr_results.csv", row.names=FALSE)
