@@ -35,7 +35,7 @@ run_results <<- data.frame(package = character(0),
                          fun = character(0),
                          input = character(0),
                          output = character(0),
-                         result = integer(0),
+                         exitval = integer(0),
                          errmsg = character(0),
                          stringsAsFactors = FALSE)
 
@@ -54,10 +54,10 @@ for(i in seq_along(fun_list)) {
       res <- do.call(fun, arg_list)
       output_type <- toString(typeof(res))
 
-      obs <- data.frame(package = package, fun = fun_list[[i]], input = input_type, output = output_type, result = 0, errmsg = NA)
+      obs <- data.frame(package = package, fun = fun_list[[i]], input = input_type, output = output_type, exitval = 0L, errmsg = NA)
       run_results <<- rbind(obs, run_results)
     }, error = function(e) {
-      obs <- data.frame(package = package, fun = fun_list[[i]], intput = input_type, output = NA, result = 1, errmsg = as.character(e))
+      obs <- data.frame(package = package, fun = fun_list[[i]], intput = input_type, output = NA, exitval = 1L, errmsg = as.character(e))
       run_results <<- rbind(obs, run_results)
     })
   }
@@ -69,4 +69,4 @@ if(!is.null(end)) {
   stop("could not close db")
 }
 
-write.csv(run_results, "signatr_results.csv", row.names=FALSE)
+write.csv(run_results, "signatr-results.csv", row.names=FALSE)
