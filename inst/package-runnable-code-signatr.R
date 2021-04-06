@@ -5,6 +5,11 @@ options(error = function() { traceback(3); q(status=1) })
 library(glue)
 library(runr)
 
+library(tictoc)
+
+tic("wrapping")
+print("wrapping started...")
+
 wrap <- function(package, file, type, body) {
   body <- paste("      ", body, collapse="\n")
   glue(
@@ -12,7 +17,7 @@ wrap <- function(package, file, type, body) {
     "{body}",
     "}},",
     "path=file.path(Sys.getenv('RUNR_CWD'), basename('{file}')),",
-    "package = \"{package}\"",
+    "package = {paste0(all, collapse=',')}",
     ")",
   .sep = "\n"
   )
@@ -28,6 +33,9 @@ if (length(args) != 1) {
 package_path <- args[1]
 package <- basename(package_path)
 
+all <- tools::package_dependencies(package, recursive = TRUE)
+all[[1]] <- c(package, all[[1]])
+
 df <- runr::extract_package_code(
   package,
   package_path,
@@ -35,6 +43,9 @@ df <- runr::extract_package_code(
   output_dir=".",
   compute_sloc=TRUE,
   wrap_fun=wrap
-)
+  )
+
+print("wrapping done!")
+toc()
 
 write.csv(df, OUTPUT_FILE, row.names=FALSE)
