@@ -53,6 +53,8 @@ run_results <<- data.frame(package = character(0),
 
 for(i in seq_along(fun_list)) {
   package <- package_list[[i]]
+  stopifnot(!is.na(package))
+
   fun <- get(fun_list[[i]], envir=getNamespace(package), mode="function")
   params <- params_list[[i]]
 
