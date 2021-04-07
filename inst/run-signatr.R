@@ -6,12 +6,12 @@ library(record)
 args <- commandArgs(TRUE)
 
 if (length(args) < 1) {
-  message("USAGE: ./run-signatr.R [functions_path] [db_path] [num_fun] [num_run] [package_name]")
+  message("USAGE: ./run-signatr.R [functions_path] [db_path] [num_fun] [num_run] [package] [fun-arity]")
   q(status=1)
 }
 
-functions_df <- read.csv(args[1])
-
+functions_df <- read.csv(args[1]) # nrow(functions_df) = 551,665
+ 
 db <- open_db(args[2], create = FALSE)
 if(!is.null(db)) {
   stop("could not open db")
@@ -20,9 +20,13 @@ if(!is.null(db)) {
 num_fun <- args[3]
 num_run <- args[4]
 
-if(length(args) == 5) {
+if(length(args) >= 5) {
   package_name <- paste0("/mnt/nvme1/R/project-signatR/run/package-metadata/", args[5])
   functions_df <- functions_df[functions_df$package == package_name, ]
+  if(length(args) == 6) {
+    arity <- args[6]
+    functions_df <- functions_df[nchar(gsub('[^;]', '', functions_df$params))+1==arity,,drop=FALSE]
+  }
 }
 
 rand_id <- sample.int(nrow(functions_df), num_fun)
