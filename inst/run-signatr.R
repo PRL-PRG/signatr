@@ -11,6 +11,7 @@ if (length(args) < 1) {
 }
 
 functions_df <- read.csv(args[1]) # nrow(functions_df) = 551,665
+functions_df <- na.omit(functions_df) #nrow(functions_df) = 537,272
 
 db <- open_db(args[2], create = FALSE)
 if(!is.null(db)) {
@@ -40,6 +41,8 @@ num_runs <- args[4]
 
 
 package_list <- lapply(rand_id, function(id) basename(functions_df[id,]$package))
+
+
 fun_list <- lapply(rand_id, function(id) functions_df[id,]$fun)
 params_list <- lapply(rand_id, function(id) strsplit(functions_df[id,]$params, ";"))
 
@@ -53,8 +56,6 @@ run_results <<- data.frame(package = character(0),
 
 for(i in seq_along(fun_list)) {
   package <- package_list[[i]]
-  stopifnot(!is.na(package))
-
   fun <- get(fun_list[[i]], envir=getNamespace(package), mode="function")
   params <- params_list[[i]]
 
