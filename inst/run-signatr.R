@@ -17,9 +17,6 @@ if(!is.null(db)) {
   stop("could not open db")
 }
 
-num_fun <- args[3]
-num_run <- args[4]
-
 if(length(args) >= 5) {
   package_name <- paste0("/mnt/nvme1/R/project-signatR/run/package-metadata/", args[5])
   functions_df <- functions_df[functions_df$package == package_name, ]
@@ -28,6 +25,10 @@ if(length(args) >= 5) {
     functions_df <- functions_df[nchar(gsub('[^;]', '', functions_df$params))+1==arity,,drop=FALSE]
   }
 }
+
+num_fun <- if (nrow(functions_df) >= args[3]) args[3] else nrow(functions_df)
+num_run <- args[4]
+
 
 rand_id <- sample.int(nrow(functions_df), num_fun)
 
