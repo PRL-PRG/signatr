@@ -6,7 +6,7 @@ library(record)
 args <- commandArgs(TRUE)
 
 if (length(args) < 1) {
-  message("USAGE: ./run-signatr.R [functions_path] [db_path] [num_fun] [num_run] [package] [fun-arity]")
+  message("USAGE: ./run-signatr.R [functions_path] [db_path] [num_funs] [num_runs] [package] [fun-arity]")
   q(status=1)
 }
 
@@ -26,17 +26,17 @@ if(length(args) >= 5) {
   }
 }
 
-total <- nrow(functions_df)
+total_funs <- nrow(functions_df)
+num_funs <- as.integer(args[3])
 
-if (total >= args[3]) {
-  num_fun <- args[3]
-  rand_id <- sample.int(total, num_fun)
+if (total_funs >= num_funs) {
+  rand_id <- sample.int(total_funs, num_funs)
 } else {
-  num_fun <- total
-  rand_id <- sample.int(total, total)
+  num_funs <- total_funs
+  rand_id <- sample.int(num_funs, num_funs)
 }
 
-num_run <- args[4]
+num_runs <- args[4]
 
 
 package_list <- lapply(rand_id, function(id) basename(functions_df[id,]$package))
@@ -56,7 +56,9 @@ for(i in seq_along(fun_list)) {
   fun <- get(fun_list[[i]], envir=getNamespace(package), mode="function")
   params <- params_list[[i]]
 
-  for (j in 1:num_run) {
+  for (j in 1:num_runs) {
+    stopifnot(size_db() >= length(params[[1]]))
+
     id <- sample.int(size_db(), length(params[[1]]))
     arg_list <- lapply(id, function(id) get_random_val())
 
