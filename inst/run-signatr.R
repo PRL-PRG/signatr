@@ -11,7 +11,7 @@ if (length(args) < 1) {
 }
 
 functions_df <- read.csv(args[1]) # nrow(functions_df) = 551,665
- 
+
 db <- open_db(args[2], create = FALSE)
 if(!is.null(db)) {
   stop("could not open db")
@@ -26,11 +26,18 @@ if(length(args) >= 5) {
   }
 }
 
-num_fun <- if (nrow(functions_df) >= args[3]) args[3] else nrow(functions_df)
+total <- nrow(functions_df)
+
+if (total >= args[3]) {
+  num_fun <- args[3]
+  rand_id <- sample.int(total, num_fun)
+} else {
+  num_fun <- total
+  rand_id <- sample.int(total, total)
+}
+
 num_run <- args[4]
 
-
-rand_id <- sample.int(nrow(functions_df), num_fun)
 
 package_list <- lapply(rand_id, function(id) basename(functions_df[id,]$package))
 fun_list <- lapply(rand_id, function(id) functions_df[id,]$fun)
