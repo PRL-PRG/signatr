@@ -46,7 +46,11 @@ trace_fun_args <- function(package, code, substituted = FALSE) {
   if(!substituted) {code <- substitute(code)}
 
   set_application_load_callback(context, function(context, application) {
-    open_db(paste0("../tests/db/", package), create = TRUE)
+    if(dir.exists(file.path("/tmp/db", package))) {       #TODO: is there a better way to handle this? change the API?
+      open_db(file.path("/tmp/db", package), create = FALSE)
+    } else {
+      open_db(file.path("/tmp/db", package), create = TRUE)
+    }
   })
 
   set_application_unload_callback(context, function(context, application) {

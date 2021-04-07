@@ -4,7 +4,7 @@ test_that("test value tracing", {
     stringr::str_detect("AB", "A")
   }) # FALSE, "AB", TRUE, "regex", "A", NULL, "B" 
 
-  record::open_db("../db/stringr", create = FALSE)
+  record::open_db("/tmp/db/stringr", create = FALSE)
 
   expect_equal(record::have_seen("AB"), TRUE)
   expect_equal(record::have_seen(FALSE), TRUE)
@@ -39,11 +39,12 @@ test_that("trace test", {
   # "String with trailing, middle, and leading white space", NULL
   # "\n\nString with trailing and leading white space\n\n"
                                         # "  String with trailing and leading white space\t"
-  record::open_db("../db/stringr", create = FALSE)
+  record::open_db("/tmp/db/stringr", create = FALSE)
 
   expect_equal(record::have_seen("empty"), TRUE)
   expect_equal(record::have_seen("String with trailing and leading white space"), TRUE)
   expect_equal(record::have_seen("AB"), TRUE)
+  expect_equal(record::have_seen("hyeyoung"), FALSE)
 
   record::close_db()
 })
