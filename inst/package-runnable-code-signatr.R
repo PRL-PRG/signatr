@@ -46,6 +46,8 @@ df <- runr::extract_package_code(
   )
 
 print("wrapping done!")
-toc()
+time <- toc()
 
 write.csv(df, OUTPUT_FILE, row.names=FALSE)
+write.csv(time, "instru-time.csv", row.names=FALSE)
+
