@@ -1,3 +1,29 @@
+## save_val <- function(val, pos, package_name, fun_name, values, sources, values_sources) {
+##   value_hash <- sha1(deparse1(val))
+
+##   if (!exists(value_hash, envir=values)) {
+##     ## value_ser <- serialize(val, connection=NULL, ascii=FALSE)
+##     value <- list(hash = value_hash, type = typeof(val), value = val)
+##     assign(value_hash, value, envir=values)
+##   }
+
+##   source_hash <- paste(package_name, fun_name, pos, sep=":")
+##   if (!exists(source_hash, envir=sources)) {
+##     source <- list(source_hash, package_name, fun_name, pos)
+##     assign(source_hash, source, envir=sources)
+##   }
+
+##   value_source <- get0(value_hash, envir=values_sources)
+##   if (is.null(value_source)) {
+##     value_source <- new.env(parent=emptyenv())
+##     assign(value_hash, value_source, envir=values_sources)
+##   }
+
+##   count <- get0(source_hash, envir=value_source, ifnotfound=0)
+##   count <- count + 1
+##   assign(source_hash, count, envir=value_source)
+## }
+
 #' @importFrom digest sha1
 #' @importFrom purrr detect_index discard map_chr
 #' @importFrom instrumentr is_successful is_vararg is_evaluated get_name get_parameters get_data get_result get_position get_arguments is_evaluated
@@ -15,7 +41,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
   sources <- data$sources
   values_sources <- data$values_sources
 
-  store_val <- function(val, pos) {
+  save_val <- function(val, pos) {
     value_hash <- sha1(deparse1(val))
 
     if (!exists(value_hash, envir=values)) {
@@ -42,7 +68,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
   }
 
   return_val <- get_result(call)
-  store_val(return_val, pos = 0)
+  save_val(return_val, pos = 0)
 
   for (param in params) {
     pos <- get_position(param) + 1
@@ -62,7 +88,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
     }
     arg_val <- get_result(arg)
 
-    store_val(arg_val, pos = pos)
+    save_val(arg_val, pos=pos)
   }
 }
 
