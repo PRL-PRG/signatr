@@ -11,6 +11,6 @@ static const R_CallMethodDef callMethods[] = {
 	{NULL, NULL, 0}
 };
 
-void R_init_record(DllInfo* dll) {
+void R_init_signatr(DllInfo* dll) {
 	R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
 }
