@@ -4,7 +4,7 @@ test_that("trace_fun_args str_detect", {
     stringr::str_detect("AB", "A")
   })
   ## save_fun_args_data(r$data, ".")
-  expect_equal(length(r), 7)
+  expect_equal(length(r$data$values), 7)
 })
 
 ## test_that("trace str_trim", {
