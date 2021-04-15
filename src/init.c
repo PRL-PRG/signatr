@@ -4,10 +4,10 @@
 #include <R_ext/Rdynload.h>
 #include <Rinternals.h>
 
-SEXP hello_c (SEXP name);
+SEXP hello (SEXP name);
 
 static const R_CallMethodDef callMethods[] = {
-	{"hello_c", 		(DL_FUNC) &hello_c, 1},
+	{"hello", 		(DL_FUNC) &hello, 1},
 	{NULL, NULL, 0}
 };
 
