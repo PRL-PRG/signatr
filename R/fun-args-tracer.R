@@ -2,14 +2,13 @@
 #' @importFrom purrr detect_index discard map_chr
 #' @importFrom instrumentr is_successful is_vararg is_evaluated get_name get_parameters get_data get_result get_position get_arguments is_evaluated
 trace_exit_callback <- function(context, application, package, func, call) {
+  tictoc::tic(paste0("collecting values from ", get_name(package), "::", get_name(func)))
   if (!instrumentr::is_successful(call)) {
     return()
   }
 
   fun_name <- get_name(func)
   package_name <- get_name(package)
-
-  tictoc::tic(paste0("collecting values from ", package_name, "::", fun_name))
   params <- get_parameters(call)
 
   data <- get_data(context)
@@ -71,7 +70,7 @@ trace_exit_callback <- function(context, application, package, func, call) {
   print(time$msg)
 
   df <- data.frame(pckg = package_name, f = fun_name, num_vals = length(params)+1, time = time$toc - time$tic)
-  write.csv(df, paste0(package_name, "::", fun_name, ".csv"), row.names=FALSE)
+  write.csv(df, paste0("csv/", package_name, "::", fun_name, ".csv"), row.names=FALSE)
 }
 
 #' @export
@@ -105,6 +104,7 @@ trace_fun_args <- function(package, code, substituted = FALSE) {
 #' @importFrom instrumentr get_data set_data
 #' @importFrom purrr map_dfr
 process_traced_data <- function(context, application) {
+  tictoc::tic("processing values")
   data <- get_data(context)
   values <- data$values
   sources <- data$sources
@@ -130,6 +130,9 @@ process_traced_data <- function(context, application) {
   )
 
   set_data(context, data)
+  time <- tictoc::toc()
+  print(time$msg)
+  write.csv(time, "process_time.csv", row.names=FALSE)
 }
 
 #' @export
