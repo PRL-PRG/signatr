@@ -8,6 +8,8 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
   fun_name <- get_name(func)
   package_name <- get_name(package)
+
+  tictoc::tic(paste0("collecting values from ", package_name, "::", fun_name))
   params <- get_parameters(call)
 
   data <- get_data(context)
@@ -64,6 +66,10 @@ trace_exit_callback <- function(context, application, package, func, call) {
 
     save_val(arg_val, pos=pos)
   }
+
+  time <- tictoc::toc()
+  df <- data.frame(pckg = package_name, f = fun_name, num_vals = length(params)+1, time = time.toc - time.tic)
+  wrtie.csv(df, paste0(package_name, "::", fun_name, ".csv"), row.names=FALSE)
 }
 
 #' @export
