@@ -1,6 +1,5 @@
 test_that("trace_fun_args str_detect", {
   r <- trace_fun_args("stringr", {
-    browser()
     stringr::str_detect("AB", "B")
     stringr::str_detect("AB", "A")
   })
