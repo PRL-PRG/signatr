@@ -13,7 +13,7 @@ print("wrapping started...")
 wrap <- function(package, file, type, body) {
   body <- paste("      ", body, collapse="\n")
   glue(
-    "signatr::trace(code = {{",
+    "argtracer::trace_args(code = {{",
     "{body}",
     "}},",
     "path=file.path(Sys.getenv('RUNR_CWD'), basename('{file}')),",
