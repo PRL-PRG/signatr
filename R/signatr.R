@@ -24,10 +24,14 @@ infer_function_signature <- function(f,
 				output = f()
 				current_type[[2]] = type(output)
 			}, warning = function(warn) {
-				current_type[[2]] = NA
+				print(warn)
 			}, error = function(err) {
-				current_type[[2]] = NA
+				print(err)
 			})
+
+			if (length(current_type) == 1) {
+				current_type[[2]] = NA
+			}
 
 			types[[length(types) + 1]] = current_type
 		} else {
@@ -41,14 +45,41 @@ infer_function_signature <- function(f,
 				output = do.call(f, as.list(params))
 				current_type[[2]] = type(output)
 			}, warning = function(warn) {
-				current_type[[2]] = NA
+				print(warn)
 			}, error = function(err) {
-				current_type[[2]] = NA
+				print(err)
 			})
+
+			if (length(current_type) == 1) {
+				current_type[[2]] = NA
+			}
 
 			types[[length(types) + 1]] = current_type
 		}
 	}
 
 	return(type_unify(types))
+}
+
+#' Print the inferred function types
+#'
+#' @export
+#' @param types are the types inferred by the infer_function_signature function
+print_types <- function(types) {
+	lapply(types, print_type)
+}
+
+#' Print the inferred function type
+#'
+#' @param type is a type inferred by the infer_function_signature function.
+print_type <- function(type) {
+	args = type[[1]]
+	output = type[[2]]
+
+	if (length(args) == 1 && is.na(args[1])) {
+		print(paste("NA", output, sep = " -> "))
+	} else {
+		input_types = paste(args, collapse=" x ")
+		print(paste(input_types, output, sep = " -> "))
+	}
 }
