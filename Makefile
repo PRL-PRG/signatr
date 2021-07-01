@@ -1,4 +1,4 @@
-R = ~/R/R-dyntrace/bin/R
+R = R
 
 .PHONY: all build check document test
 
