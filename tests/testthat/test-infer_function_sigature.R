@@ -53,4 +53,15 @@ test_that("printing function experiment", {
 	expect_true(1 == 1)
 })
 
+test_that("simple runner test", {
+	res = run_infer_function_signature(zero,
+										fix_point_budget = 10,
+										type_infer = infer_function_signature,
+										attempt_budget = 10,
+										type = typeof,
+										type_unify = unique)
+	expect_true(length(res) == 1)
+	print_types(res)
+})
+
 }
