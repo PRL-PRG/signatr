@@ -1,5 +1,5 @@
 # globals
-builtin_types <- list("logical", "integer", "double", "complex", "character", "raw", "list")
+builtin_types <- c("logical", "integer", "double", "complex", "character", "raw", "list")
 all_types <- c(builtin_types, "db")
 
 
@@ -38,23 +38,21 @@ feedback_loop <- function (package = NA,
     history <- list()
     tol <- tolerance
 
-    ## perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # n^r
-    ## id <- 1
+    perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # n^r
+    id <- 1
 
     while (budget > 0) {
       if (length(history) == 0 || tol == 0 || (nrow(state) != 0 && state[nrow(state),]$exitval == 0L)) {
-        new_types <- generate_type(history, types, num_params)
-        history <- append(history, list(new_types))
-        ## new_types <- perms[id,]
-        ## id <- id + 1
+        new_types <- perms[id,]
 
         if (tol == 0 ) tol <- tolerance
 
-        if (length(new_types) == 0) {
+        if (id == nrow(perms)) {
           print("we've tried all types!")
           break
         } else {
           mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, new_types)
+          id <- id + 1
         }
 
       } else {
