@@ -1,4 +1,3 @@
-# globals
 builtin_types <- c("logical", "integer", "double", "complex", "character", "raw", "list")
 all_types <- c(builtin_types, "db")
 
@@ -41,23 +40,21 @@ feedback_loop <- function (package = NA,
     perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # n^r
     id <- 1
 
-    while (budget > 0) {
-      if (length(history) == 0 || tol == 0 || (nrow(state) != 0 && state[nrow(state),]$exitval == 0L)) {
+    while (budget > 0 && id < nrow(perms) + 1) {
+      if (feedback(history, tol, state)) {
         new_types <- perms[id,]
 
         if (tol == 0 ) tol <- tolerance
 
-        if (id == nrow(perms)) {
-          print("we've tried all types!")
-          break
-        } else {
-          mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, new_types)
-          id <- id + 1
-        }
+        mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, new_types)
+
+        id <- id + 1
 
       } else {
         old_types <- history[[length(history)]]
+
         mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, old_types)
+
         tol <- tol - 1
       }
 
@@ -70,6 +67,10 @@ feedback_loop <- function (package = NA,
 
   rownames(state) <- NULL
   state
+}
+
+feedback <- function(history, tol, state) {
+  length(history) == 0 || tol == 0 || (nrow(state) != 0 && state[nrow(state),]$exitval == 0L)
 }
 
 
@@ -114,54 +115,4 @@ generate_val <- function(type, db_path) {
             }
           })
 }
-
-
-# history : list of lists
-# types : list
-# num : double
-#' generates a new combination of types to try
-#' @param history   types tried so far
-#' @param types     to choose from
-#' @param num       number of types to generate
-#' @return          a list of types that haven't been tried
-generate_type <- function(history, types, num) {
-  combined <- list()
-
-  for (i in seq(num)) {
-    combined[[i]] <- lapply(history, function(old_types) old_types[[i]])
-  }
-
-  available_types <- lapply(combined, function(old_types) {
-    types[!(types %in% old_types)]
-  })
-
-  not_exhausted <- purrr::reduce(available_types, function(x, y) x + length(y), .init=0)
-
-  new_types <- list()
-
-  if(not_exhausted) {
-    new_types <- lapply(available_types, function(ts) {
-      size <- length(ts)
-      if (size == 0) {   # there is no more types left to try
-        rand <- sample.int(length(types), 1)
-        return(types[[rand]])
-      } else {
-        rand <- sample.int(size, 1)
-        return(ts[[rand]])
-      }
-    })
-  }
-
-  return(new_types)
-}
-
-
-print_state <- function(x) {
-  print(x)
-}
-
-
-
-
-
 
