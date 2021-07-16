@@ -29,7 +29,7 @@ feedback_loop <- function (package = NA,
   num_params <- length(params)
 
   if (num_params == 0) {
-    new_states <- lapply(seq(budget), function(x) run_fun(fun, list()))
+    new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
     state <- do.call(rbind, new_states)
 
   } else {
@@ -37,7 +37,7 @@ feedback_loop <- function (package = NA,
     history <- list()
     tol <- tolerance
 
-    perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # n^r
+    perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # complexity: n^r
     id <- 1
 
     while (budget > 0 && id < nrow(perms) + 1) {
@@ -59,7 +59,7 @@ feedback_loop <- function (package = NA,
       }
 
       args <- params
-      new_state <- run_fun(fun, args)
+      new_state <- run_fun(package, fun_name, fun, args)
       state <- rbind(state, new_state)
       budget <- budget - 1
     }
@@ -69,22 +69,27 @@ feedback_loop <- function (package = NA,
   state
 }
 
-feedback <- function(history, tol, state) {
+#' decides whether to use a new set of types in the next run or not
+#' @param history    sets of types used so far
+#' @param tolerance  how many times to try the same set of types
+#' @param state      current state
+#' @return           TRUE if a new set of types should be tried
+feedback <- function(history, tolerance, state) {
   length(history) == 0 || tol == 0 || (nrow(state) != 0 && state[nrow(state),]$exitval == 0L)
 }
 
 
-run_fun <- function(fun, args) {
+run_fun <- function(package, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
-    list(args, output, 0L, NA, NA)
+    list(package, fun_name, length(args), args, output, 0L, NA, NA)
   }, warning = function(w) {
-    list(args, NA, 1L, w, NA)
+    list(package, fun_name, length(args), args, NA, 1L, w, NA)
   }, error = function(e) {
-    list(args, NA, 2L, NA, e)
+    list(package, fun_name, length(args), args, NA, 2L, NA, e)
   })
 
-  names(res) <- c("input", "output", "exitval", "warnmsg", "errmsg")
+  names(res) <- c("package", "fun_name", "num_param", "input", "output", "exitval", "warnmsg", "errmsg")
   res
 }
 
