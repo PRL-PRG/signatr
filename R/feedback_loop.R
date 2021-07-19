@@ -79,6 +79,12 @@ feedback <- function(history, tolerance, state) {
 }
 
 
+#' runs given function with args and stores the result in a list
+#' @param package    package name if the function is a library function
+#' @param fun_name   function name
+#' @param fun        closure
+#' @param args       arguments to run the function with
+#' @return           list of metadata and running result
 run_fun <- function(package, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
