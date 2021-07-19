@@ -44,7 +44,7 @@ param3 <- data[data[,3] == 3,]                   #nrow(param3) = 5145
 
 param123 <- do.call(rbind, list(param1, param2, param3))       # 6146
 param123_success <- param123[param123[,6] == 0L,]              # 1526
-param123_success_rate <- nrow(success) / nrow(data) * 100       # 24.8% | 30.9%
+param123_success_rate <- nrow(param123_success) / nrow(param123) * 100       # 24.8% | 30.9%
 
 print(paste0("the number of one argument functions: ", nrow(param1)))
 print(paste0("the number of two argument functions: ", nrow(param2)))
