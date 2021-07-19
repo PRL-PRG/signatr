@@ -58,7 +58,7 @@ feedback_loop <- function (package = NA,
       }
 
       args <- params
-      new_state <- run_func(package, fun_name, fun, args)
+      new_state <- run_fun(package, fun_name, fun, args)
       state <- rbind(state, new_state)
       budget <- budget - 1
     }
@@ -85,7 +85,7 @@ feedback <- function(history, tolerance, state) {
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
 #' @export
-run_func <- function(package, fun_name, fun, args) {
+run_fun <- function(package, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
     list(package, fun_name, length(args), args, output, 0L, NA, NA)
