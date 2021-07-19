@@ -85,7 +85,7 @@ feedback <- function(history, tolerance, state) {
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
 #' @export
-run_funct <- function(package, fun_name, fun, args) {
+run_func <- function(package, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
     list(package, fun_name, length(args), args, output, 0L, NA, NA)
