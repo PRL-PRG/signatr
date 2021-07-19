@@ -8,7 +8,6 @@ all_types <- c(builtin_types, "db")
 #' @param vg      value generator 
 #' @param runs    number of runs to try plugging sampled vals
 #' @return
-#' @importFrom record open_db close_db sample_val size_db
 #' @export
 feedback_loop <- function (package = NA,
                            fun_name,
@@ -85,6 +84,7 @@ feedback <- function(history, tolerance, state) {
 #' @param fun        closure
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
+#' @export
 run_fun <- function(package, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
@@ -117,9 +117,9 @@ generate_val <- function(type, db_path) {
           "list" = as.list(val),
           "db" =  {
             if(dir.exists(db_path)) {
-              db <- open_db(db_path, create = FALSE)
-              val <- sample_val()         #TODO: could use new api to generate targeted val
-              close_db()
+              db <- record::open_db(db_path, create = FALSE)
+              val <- record::sample_val()         #TODO: could use new api to generate targeted val
+              record::close_db()
               return(val)
             } else {
               stop("db doesn't exist.")
