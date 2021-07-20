@@ -54,9 +54,9 @@ param123 <- do.call(rbind, list(param1, param2, param3))       # 6146
 param123_success <- param123[param123[,6] == 0L,]              # 1526
 param123_success_rate <- nrow(param123_success) / nrow(param123) * 100       # 24.8% | 30.9%
 
-print(paste0("number of one argument functions: ", nrow(param1)))
-print(paste0("number of two argument functions: ", nrow(param2)))
-print(paste0("number of three argument functions: ", nrow(param3)))
+print(paste0("number of calls to one argument functions: ", nrow(param1)))
+print(paste0("number of calls to two argument functions: ", nrow(param2)))
+print(paste0("number of calls to three argument functions: ", nrow(param3)))
 
 print(paste0("success rate for upto three argument functions for ", package, ": ", param123_success_rate))
 
