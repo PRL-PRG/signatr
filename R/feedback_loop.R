@@ -28,7 +28,7 @@ feedback_loop <- function (package = NA,
   num_params <- length(params)
 
   if (num_params == 0) {
-    new_states <- lapply(seq(budget), function(x) run_function(package, fun_name, fun, list()))
+    new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
     state <- do.call(rbind, new_states)
 
   } else {
@@ -58,7 +58,7 @@ feedback_loop <- function (package = NA,
       }
 
       args <- params
-      new_state <- run_function(package, fun_name, fun, args)
+      new_state <- run_fun(package, fun_name, fun, args)
       state <- rbind(state, new_state)
       budget <- budget - 1
     }
@@ -84,8 +84,7 @@ feedback <- function(history, tolerance, state) {
 #' @param fun        closure
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
-#' @export
-run_function <- function(package, fun_name, fun, args) {
+run_fun <- function(package, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
     list(package, fun_name, length(args), args, output, 0L, NA, NA)
@@ -104,7 +103,6 @@ run_function <- function(package, fun_name, fun, args) {
 #' @param type    which type of value to generate
 #' @param db_path (optional) if types is "db", it's the path to the db
 #' @return
-#' @export
 generate_val <- function(type, db_path) {
   val <- sample.int(255, size = 1)
   switch (type,
