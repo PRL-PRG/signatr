@@ -28,7 +28,7 @@ feedback_loop <- function (package = NA,
   num_params <- length(params)
 
   if (num_params == 0) {
-    new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
+    new_states <- lapply(seq(budget), function(x) run_function(package, fun_name, fun, list()))
     state <- do.call(rbind, new_states)
 
   } else {
