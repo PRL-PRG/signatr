@@ -26,7 +26,7 @@ state <- lapply(exported_functions, function(fun) feedback_loop(package = packag
                                                                 fun_name = fun,
                                                                 budget = budget,
                                                                 tolerance = tolerance))
-toc()
+running <- toc()
 
 tic("preparing the data")
 data <- do.call(rbind, state)                    # nrow(data) = 9919
@@ -60,10 +60,9 @@ print(paste0("number of three argument functions: ", nrow(param3)))
 
 print(paste0("success rate for upto three argument functions for ", package, ": ", param123_success_rate))
 
-df <- data.frame(packge = package, num_fun = length(exported_functions), total_calls = nrow(data), success_all = success_rate, param123 = nrow(param123), success_param123 = param123_success_rate)
+toc()
+total <- toc()
+
+df <- data.frame(packge = package, num_fun = length(exported_functions), total_calls = nrow(data), success_all = success_rate, param123 = nrow(param123), success_param123 = param123_success_rate, time_total = (total$toc - total$tic), time_running = (running$toc - running$tic))
 
 write.csv(df, paste0(package, "_metadata.csv"), row.names=FALSE)
-
-toc()
-toc()
-
