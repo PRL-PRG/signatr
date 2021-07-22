@@ -31,18 +31,16 @@ feedback_loop <- function (package = NA,
     new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
     state <- do.call(rbind, new_states)
 
+  } else if (num_params > 10) {
+    state <- list(package, fun_name, num_params, NA, NA, 3L, NA, NA)
+    names(state) <- c("package", "fun_name", "num_param", "input", "output", "exitval", "warnmsg", "errmsg")
   } else {
 
     param_names <- names(params)
     history <- list()
     tol <- tolerance
 
-    print(paste0(fun_name, " before perms"))
-    print(paste0("length of types: ", length(types)))
-    print(paste0("number of params: ", num_params))
-
     perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # complexity: n^r
-    print(paste0(fun_name, " after perms"))
 
     id <- 1
 
@@ -69,7 +67,6 @@ feedback_loop <- function (package = NA,
       state <- rbind(state, new_state)
       budget <- budget - 1
     }
-    print(paste0(fun_name, " exiting while"))
   }
 
   rownames(state) <- NULL
