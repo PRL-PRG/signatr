@@ -45,9 +45,9 @@ print(paste0("Number of three argument functions: ", param3))
 
 
 state <- lapply(filtered$fun, function(fun) feedback_loop(package = package,
-                                                                fun_name = fun,
-                                                                budget = budget,
-                                                                tolerance = tolerance))
+                                                          fun_name = fun,
+                                                          budget = budget,
+                                                          tolerance = tolerance))
 
 data <- do.call(rbind, state)                    # nrow(data) = 9919
 
@@ -60,7 +60,7 @@ tic("data analysis")
 print(paste0("Total of function calls made: ", nrow(data)))
 
 success <- data[data[,6] == 0L,]
-success_rate <- nrow(success) / nrow(data) * 100                # 21.9% | 30.9%
+success_rate <- round(nrow(success) / nrow(data) * 100, digits = 1)                # 21.9% | 30.9%
 
 print(paste0("Over all success rate: ", success_rate))
 
@@ -70,7 +70,7 @@ calls_param3 <- data[data[,3] == 3,]                   #nrow(param3) = 5145
 
 calls_param123 <- do.call(rbind, list(calls_param1, calls_param2, calls_param3))       # 6146
 calls_param123_success <- calls_param123[calls_param123[,6] == 0L,]              # 1526
-calls_param123_success_rate <- nrow(calls_param123_success) / nrow(calls_param123) * 100       # 24.8% | 30.9%
+calls_param123_success_rate <- round(nrow(calls_param123_success) / nrow(calls_param123) * 100, digits = 1)    # 24.8% | 30.9%
 
 
 print(paste0("Number of calls to one argument functions: ", nrow(calls_param1)))
@@ -86,3 +86,4 @@ total <- toc()
 meta_df <- data.frame(packge = package, num_fun = length(exported_functions), budget = budget, tolerance = tolerance, total_calls = nrow(data), success_all = success_rate, num_fun_param123 = param1 + param2 + param3, calls_to_param123 = nrow(calls_param123), success_param123 = calls_param123_success_rate, time_total = (total$toc - total$tic), time_generating = (generating$toc - generating$tic))
 
 write.csv(meta_df, paste0(package, "_metadata.csv"), row.names=FALSE)
+
