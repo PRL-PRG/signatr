@@ -35,7 +35,7 @@ feedback_loop <- function (package = NA,
   } else if (num_params > 9) {
     state <- list(package, fun_name, num_params, NA, NA, 3L, NA, NA)
     names(state) <- c("package", "fun_name", "num_param", "input", "output", "exitval", "warnmsg", "errmsg")
-    
+
   } else {
     param_names <- names(params)
     tol_left <- tolerance
