@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 
-## library(signatr)
+start <- Sys.time()
+
 library(record)
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -36,4 +37,8 @@ for (db in dbs) {
 cat(sprintf("%s values are stored in gbov\n\n", size_db()))
 
 close_db()
+
+end <- Sys.time()
+
+round(end - start, digits = 2)
 
