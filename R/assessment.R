@@ -7,5 +7,5 @@
 #' @return a double that represent the how well we did
 #'
 assess_score <- function(run_result, type_result) {
-	print(paste("score:", (100 * length(type_result) / length(run_result))))
+	print(paste("score:", round(100 * length(type_result) / dim(run_result)[1]), "/ 100"))
 }
