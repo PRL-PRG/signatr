@@ -1,5 +1,6 @@
-builtin_types <- c("logical", "integer", "double", "complex", "character", "raw", "list")
-all_types <- c(builtin_types, "db")
+# Types
+builtin <- c("logical", "integer", "double", "complex", "character", "raw", "list")
+all <- c(builtin, "db")
 
 
 #' runs the given function with values from value generator
@@ -13,7 +14,7 @@ feedback_loop <- function (package = NA,
                            fun_name,
                            fun,
                            value_generator = generate_val,
-                           types = builtin_types,
+                           types = builtin,
                            db = NULL,
                            budget,
                            tolerance) {
@@ -24,43 +25,39 @@ feedback_loop <- function (package = NA,
     fun <- get(fun_name, envir=getNamespace(package), mode="function")
   }
 
-  params <- formals(fun)                  #TODO: we can inspect default arg here
+  params <- formals(fun)
   num_params <- length(params)
 
   if (num_params == 0) {
     new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
     state <- do.call(rbind, new_states)
 
-  } else if (num_params > 10) {
+  } else if (num_params > 9) {
     state <- list(package, fun_name, num_params, NA, NA, 3L, NA, NA)
     names(state) <- c("package", "fun_name", "num_param", "input", "output", "exitval", "warnmsg", "errmsg")
+
   } else {
-
     param_names <- names(params)
-    history <- list()
-    tol <- tolerance
+    tol_left <- tolerance
 
-    perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # complexity: n^r
+    perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE) # complexity: n^r (7^10 is the limit)
 
-    id <- 1
+    perm_id <- 1
 
-    while (budget > 0 && id < nrow(perms) + 1) {
-      if (feedback(history, tol, state)) {
-        new_types <- perms[id,]
+    while (budget > 0 && perm_id < nrow(perms) + 1) {
+      if (feedback(state, tol_left)) {
+        types_to_try <- perms[perm_id,]
 
-        if (tol == 0 ) tol <- tolerance
-
-        mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, new_types)
-
-        id <- id + 1
+        if (tol_left == 0 ) tol_left <- tolerance
+        perm_id <- perm_id + 1
 
       } else {
-        old_types <- history[[length(history)]]
+        types_to_try <- lapply(state[nrow(state),]$input, typeof)
 
-        mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, old_types)
-
-        tol <- tol - 1
+        tol_left <- tol_left - 1
       }
+
+      mapply(function(name, type) {params[name] <<- value_generator(type)}, param_names, types_to_try)
 
       args <- params
       new_state <- run_fun(package, fun_name, fun, args)
@@ -73,13 +70,13 @@ feedback_loop <- function (package = NA,
   state
 }
 
+
 #' decides whether to use a new set of types in the next run or not
-#' @param history    sets of types used so far
-#' @param tolerance  how many times to try the same set of types
 #' @param state      current state
+#' @param tolerance  how many times to try the same set of types
 #' @return           TRUE if a new set of types should be tried
-feedback <- function(history, tolerance, state) {
-  length(history) == 0 || tol == 0 || (nrow(state) != 0 && state[nrow(state),]$exitval == 0L)
+feedback <- function(state, tolerance) {
+  length(state) == 0 || tolerance == 0 || nrow(state) != 0 && state[nrow(state),]$exitval == 0L
 }
 
 
@@ -89,7 +86,7 @@ feedback <- function(history, tolerance, state) {
 #' @param fun        closure
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
-run_fun <- function(package, fun_name, fun, args) {
+run_fun <- function(package = NA, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
     list(package, fun_name, length(args), args, output, 0L, NA, NA)
@@ -110,18 +107,21 @@ run_fun <- function(package, fun_name, fun, args) {
 #' @return
 generate_val <- function(type, db_path) {
   val <- sample.int(255, size = 1)
+  l <- list()
+
   switch (type,
-          "logical" =  as.logical(val),   #TODO: probability of TRUE is too high 
+          "logical" =  as.logical(val),   # TODO: sample_val(logical)
           "integer" = val,
-          "double" = as.double(val),      # three special values: Inf, -Inf, NaN 
+          "double" = as.double(val),      # TODO: add three special values: Inf, -Inf, NaN
           "complex" = as.complex(val),
           "character" = as.character(val),
           "raw" = as.raw(val),
-          "list" = as.list(val),
+          "list" = lapply(seq(val), function(i) l[[i]] <- val),
           "db" =  {
             if(dir.exists(db_path)) {
               db <- record::open_db(db_path, create = FALSE)
-              val <- record::sample_val()         #TODO: could use new api to generate targeted val
+              val <- record::sample_val()
+
               record::close_db()
               return(val)
             } else {
