@@ -12,6 +12,7 @@ test_that("Simple Integration", {
 	expect_true(length(types) >= 1)
 
 	print(types)
+	assess_score(result, result)
 })
 
 }
