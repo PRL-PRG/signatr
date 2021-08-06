@@ -1,6 +1,8 @@
 # TODO: implement least upper bound for a list of types
 # TODO: integrate with experimentation code
 
+library(contractr)
+
 #' type: R Value -> list of strings
 #' Types non-function related R values according to TypeR typing.
 #' Everything else is typed to "any".
@@ -108,7 +110,7 @@ type_function <- function(run_result) {
 		n = length(arguments$input)
 		arg_types = list()
 		for (i in 1:n) {
-			arg_types[[ length(arg_types) + 1 ]] = type(arguments$input[[i]])
+			arg_types[[ length(arg_types) + 1 ]] = contractr::infer_type(arguments$input[[i]])
 		}
 
 		argument_types[[ length(argument_types) + 1 ]] = arg_types
@@ -116,7 +118,7 @@ type_function <- function(run_result) {
 		if (is.na(return_value[[1]])) {
 			return_types[[ length(return_types) + 1 ]] = NA
 		} else  {
-			return_types[[ length(return_types) + 1 ]] =  type(return_value[[1]])
+			return_types[[ length(return_types) + 1 ]] =  infer_type(return_value[[1]])
 		}
 	}
 
@@ -135,5 +137,5 @@ type_function <- function(run_result) {
 		}
 	}
 
-	return(unique(types))
+	return(types)
 }
