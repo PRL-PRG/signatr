@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 library(tictoc)
 
-tic("total")
+tic("experimenting and generating data")
 library(signatr)
 
 args <- commandArgs(trailingOnly=TRUE)
@@ -16,7 +16,6 @@ tolerance <- as.double(args[[3]])  # 1
 
 print(paste0("Package: ", package))
 
-tic("generating data")
 ns <- getNamespace(package)
 
 namespace_objects <- lapply(getNamespace(package), typeof)
@@ -54,9 +53,11 @@ data <- do.call(rbind, state)                    # nrow(data) = 9919
 
 
 saveRDS(data, file = paste0(package, "_data_adv.RDS"))
-generating <- toc()
+experimenting <- toc()
 
-tic("data analysis")
+
+# some success analysis
+tic("analyzing success")
 
 print(paste0("Total of function calls made: ", nrow(data)))
 
@@ -80,11 +81,9 @@ print(paste0("Number of calls to three argument functions: ", nrow(calls_param3)
 
 print(paste0("Success rate for up to three argument functions: ", calls_param123_success_rate))
 
+analyzing <- toc()
 
-toc()
-total <- toc()
-
-meta_df <- data.frame(packge = package, num_fun = length(exported_functions), budget = budget, tolerance = tolerance, total_calls = nrow(data), success_all = success_rate, num_fun_param123 = param1 + param2 + param3, calls_to_param123 = nrow(calls_param123), success_param123 = calls_param123_success_rate, time_total = (total$toc - total$tic), time_generating = (generating$toc - generating$tic))
+meta_df <- data.frame(packge = package, num_fun = length(exported_functions), budget = budget, tolerance = tolerance, total_calls = nrow(data), success_all = success_rate, num_fun_param123 = param1 + param2 + param3, calls_to_param123 = nrow(calls_param123), success_param123 = calls_param123_success_rate, time_experimenting = (experimenting$toc - experimenting$tic), time_analyzing = (analyzing$toc - analyzing$tic))
 
 write.csv(meta_df, paste0(package, "_metadata_adv.csv"), row.names=FALSE)
 

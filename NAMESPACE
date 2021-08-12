@@ -2,6 +2,7 @@
 
 export(feedback_loop)
 export(feedback_loop_adv)
+export(generate_val)
 export(generate_val_adv)
 export(infer_function_signature)
 export(print_types)
