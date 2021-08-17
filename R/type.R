@@ -100,43 +100,55 @@ lub <- function(lot) {
 #'
 #' @export
 type_function <- function(run_result) {
-	rows = dim(run_result)[1]
+  suc <- run_result[run_result[,6] == 0L,]
 
-	argument_types = list()
-	return_types = list()
-	for(i in 1:rows) {
-		arguments = run_result[i, 4]
-		return_value = run_result[i, 5]
+  input_types <- lapply(suc[,4], function(input) lapply(input, contractr::infer_type))
+  output_types <- lapply(suc[,5], function(output) lapply(output, contractr::infer_type))
 
-		n = length(arguments$input)
-		arg_types = list()
-		for (i in 1:n) {
-			arg_types[[ length(arg_types) + 1 ]] = contractr::infer_type(arguments$input[[i]])
-		}
+  df <- cbind(suc, input_types = input_types, output_types = output_types)
 
-		argument_types[[ length(argument_types) + 1 ]] = arg_types
+  result <- apply(df[,9:10], function(x) paste0(paste0(x$input, collapse = " x "), x$output, collapse = " -> "))
 
-		if (is.na(return_value[[1]])) {
-			return_types[[ length(return_types) + 1 ]] = NA
-		} else  {
-			return_types[[ length(return_types) + 1 ]] =  contractr::infer_type(return_value[[1]])
-		}
-	}
+  result
 
-	types = list()
-	for (i in 1:rows) {
-		if (!is.na(return_types[[i]])) {
-			result = argument_types[[i]][[1]]
-			for (j in 2:length(argument_types[[i]])) {
-				result = paste(result, " x ", sep = "")
-				result = paste(result, argument_types[[i]][[j]], sep = "")
-			}
+  ## rows = dim(run_result)[1]
 
-			result = paste(result, " -> ", return_types[[i]])
+	## argument_types = list()
+	## return_types = list()
 
-			types[[ length(types) + 1 ]] =  result
-		}
-	}
+	## for(i in 1:rows) {
+	## 	arguments = run_result[i, 4]
+	## 	return_value = run_result[i, 5]
 
-	return(types)
+	## 	n = length(arguments$input)
+	## 	arg_types = list()
+	## 	for (i in 1:n) {
+	## 		arg_types[[ length(arg_types) + 1 ]] = contractr::infer_type(arguments$input[[i]])
+	## 	}
+
+	## 	argument_types[[ length(argument_types) + 1 ]] = arg_types
+
+	## 	if (is.na(return_value[[1]])) {
+	## 		return_types[[ length(return_types) + 1 ]] = NA
+	## 	} else  {
+	## 		return_types[[ length(return_types) + 1 ]] =  contractr::infer_type(return_value[[1]])
+	## 	}
+	## }
+
+	## types = list()
+	## for (i in 1:rows) {
+	## 	if (!is.na(return_types[[i]])) {
+	## 		result = argument_types[[i]][[1]]
+	## 		for (j in 2:length(argument_types[[i]])) {
+	## 			result = paste(result, " x ", sep = "")
+	## 			result = paste(result, argument_types[[i]][[j]], sep = "")
+	## 		}
+
+	## 		result = paste(result, " -> ", return_types[[i]])
+
+	## 		types[[ length(types) + 1 ]] =  result
+	## 	}
+	## }
+
+	## return(types)
 }
