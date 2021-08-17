@@ -1,7 +1,7 @@
 # TODO: implement least upper bound for a list of types
 # TODO: integrate with experimentation code
 
-library(contractr)
+## library(contractr)
 
 #' type: R Value -> list of strings
 #' Types non-function related R values according to TypeR typing.
@@ -98,6 +98,7 @@ lub <- function(lot) {
 #'												[1] "chr x chr x clx  ->  lgl"
 #'												....
 #'
+#' @export
 type_function <- function(run_result) {
 	rows = dim(run_result)[1]
 
@@ -118,7 +119,7 @@ type_function <- function(run_result) {
 		if (is.na(return_value[[1]])) {
 			return_types[[ length(return_types) + 1 ]] = NA
 		} else  {
-			return_types[[ length(return_types) + 1 ]] =  infer_type(return_value[[1]])
+			return_types[[ length(return_types) + 1 ]] =  contractr::infer_type(return_value[[1]])
 		}
 	}
 
