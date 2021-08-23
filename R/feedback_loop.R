@@ -310,7 +310,12 @@ sample_val_from_db <- function(db_path) {
 add_signature <- function(data) {
   suc <- data[data[,6] == 0L,]
 
-  input_types <- lapply(suc[,4], function(input) lapply(input, infer_type))
+  ## if(is.null(ncol(suc))) {
+  ##   input_types <- lapply(suc$input, infer_type)
+  ## } else {
+  ##   input_types <- lapply(suc[,4], function(input) lapply(input, infer_type))
+  ## }
+  input_types <- lapply(suc[,4, drop=FALSE], function(input) lapply(input, infer_type))
   output_types <- lapply(suc[,5], function(output) infer_type(output))
 
   df <- cbind(suc, input_types = input_types, output_types = output_types)

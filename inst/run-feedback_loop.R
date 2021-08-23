@@ -6,13 +6,14 @@ library(signatr)
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (length(args) != 3) {
+if (length(args) != 4) {
   stop("Missing an argument!")
 }
 
-package <- args[[1]]   # stringr | reshape2
-budget <- as.double(args[[2]])    # 343
-tolerance <- as.double(args[[3]])  # 1
+package <- args[[1]]
+strategy <- args[[2]]
+budget <- as.integer(args[[3]])
+tolerance <- as.integer(args[[4]])
 
 print(paste0("Package: ", package))
 
@@ -22,7 +23,7 @@ namespace_objects <- lapply(getNamespace(package), typeof)
 namespace_functions <- names(namespace_objects[namespace_objects == "closure"])
 
 exported_objects <- getNamespaceExports(package)
-exported_functions <- intersect(namespace_functions, exported_objects)     # 49 | 6
+exported_functions <- intersect(namespace_functions, exported_objects)
 closures <- lapply(exported_functions, get0, envir=ns)
 num_params <- lapply(closures, function(f) length(formals(f)))
 
@@ -45,15 +46,26 @@ print(paste0("Number of three argument functions: ", param3))
 
 state <- lapply(filtered$fun, function(fun) feedback_loop(package = package,
                                                           fun_name = fun,
-                                                          value_generator = generate_val,
+                                                          strategy = strategy,
                                                           budget = budget,
                                                           tolerance = tolerance))
-
-data <- do.call(rbind, state)                    # nrow(data) = 9919
-
-
-saveRDS(data, file = paste0(package, "_data.RDS"))
 experimenting <- toc()
+
+
+sig_added <- lapply(state, function(df) add_signature(df))
+data <- do.call(rbind, sig_added)
+saveRDS(data, file = paste0(package, "_data.RDS"))
+
+evaluated <- lapply(sig_added, function(df) evaluate(df))
+res <- cbind(package = package, fun = filtered$fun, num_sig = evaluated)
+write.csv(res, paste0(package, "_num_sig.csv"), row.names=FALSE)
+
+
+
+
+
+
+
 
 
 # some success analysis
@@ -80,8 +92,6 @@ print(paste0("Number of calls to two argument functions: ", nrow(calls_param2)))
 print(paste0("Number of calls to three argument functions: ", nrow(calls_param3)))
 
 print(paste0("Success rate for up to three argument functions: ", calls_param123_success_rate))
-
-
 
 analyzing <- toc()
 
