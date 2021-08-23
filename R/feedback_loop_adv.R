@@ -301,17 +301,16 @@ sample_val_from_db <- function(db_path) {
   val
 }
 
+#' @importFrom contractr infer_type
 #' @export
 add_signature <- function(run_result) {
   suc <- run_result[run_result[,6] == 0L,]
 
-  input_types <- lapply(suc[,4], function(input) lapply(input, contractr::infer_type))
-  output_types <- lapply(suc[,5], function(output) lapply(output, contractr::infer_type))
+  input_types <- lapply(suc[,4], function(input) lapply(input, infer_type))
+  output_types <- lapply(suc[,5], function(output) infer_type(output))
 
   df <- cbind(suc, input_types = input_types, output_types = output_types)
+  sig <- apply(df[,9:10], MARGIN = 1,  FUN = function(x) paste(paste0(x$input, collapse = " x "), x$output, sep = " -> "))
 
-  result <- apply(df[,9:10], function(x) paste0(paste0(x$input, collapse = " x "), x$output, collapse = " -> "))
-
-  result
-
+  cbind(df, sig)
 }
