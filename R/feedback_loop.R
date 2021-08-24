@@ -58,14 +58,13 @@ feedback_loop <- function (package = NA,
              #matrix, array
              #complexity: n^r (7^10 is the limit)
              perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
-             browser()
 
-             if (nrow(perms) > budget) perms <- perms[1:budget,]
+             if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
 
              apply(perms, MARGIN=1, FUN=function(perm) {
                types_to_try <- perm
 
-               mapply(function(name, type) {params[name] <<- value_generator(type, n = 3)}, param_names, types_to_try)
+               mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
 
                args <- params
                new_state <- run_fun(package, fun_name, fun, args)
@@ -174,9 +173,6 @@ generate_types_randomly <- function(types, params) {
   random_perm #TODO: generating a unique permutation and exhausting all permutations
 }
 
-## generate_types_again <- function(state, tolerance) {
-
-## }
 
 ## generate_types_new <- function(types, params, err) {
 ##   if(is.missing(err)) {
@@ -315,7 +311,7 @@ add_signature <- function(data) {
   ## } else {
   ##   input_types <- lapply(suc[,4], function(input) lapply(input, infer_type))
   ## }
-  input_types <- lapply(suc[,4, drop=FALSE], function(input) lapply(input, infer_type))
+  input_types <- lapply(suc[ ,4,drop=FALSE], function(input) lapply(input, infer_type))
   output_types <- lapply(suc[,5], function(output) infer_type(output))
 
   df <- cbind(suc, input_types = input_types, output_types = output_types)
