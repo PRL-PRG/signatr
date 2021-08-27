@@ -6,14 +6,14 @@ library(signatr)
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (length(args) != 4) {
-  stop("Missing an argument!")
+if (length(args) != 3) {
+  stop("wrong number of arguments!")
 }
 
 package <- args[[1]]
 strategy <- args[[2]]
 budget <- as.integer(args[[3]])
-tolerance <- as.integer(args[[4]])
+## tolerance <- as.integer(args[[4]])
 
 print(paste0("Package: ", package))
 
@@ -44,20 +44,20 @@ print(paste0("Number of two argument functions: ", param2))
 print(paste0("Number of three argument functions: ", param3))
 
 
-state <- lapply(filtered$fun, function(fun) feedback_loop(package = package,
+states <- lapply(filtered$fun, function(fun) feedback_loop(package = package,
                                                           fun_name = fun,
                                                           strategy = strategy,
-                                                          budget = budget,
-                                                          tolerance = tolerance))
+                                                          budget = budget))
+                                                          ## tolerance = tolerance))
 experimenting <- toc()
 
-
-sig_added <- lapply(state, function(df) add_signature(df))
-data <- do.call(rbind, sig_added)
+data <- do.call(rbind, states)
 saveRDS(data, file = paste0(package, "_data.RDS"))
 
-evaluated <- lapply(sig_added, function(df) evaluate(df))
+sig_added <- lapply(states, function(state) add_signature(state))
+evaluated <- lapply(sig_added, function(suc_state) evaluate(suc_state))
 res <- cbind(package = package, fun = filtered$fun, num_sig = evaluated)
+
 write.csv(res, paste0(package, "_num_sig.csv"), row.names=FALSE)
 
 
