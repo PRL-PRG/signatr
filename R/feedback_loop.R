@@ -14,23 +14,23 @@ TYPES <- c(DIM0, DIM1, DIM2)
 #' @param  value_generator a function that provides arguments
 #' @param  strategy        how to pick the types for each argument in the next run
 #' @param  budget          number of calls to fun
-#' @param  tolerance       number of calls that applies values of the same type permutation
+## @param  tolerance       number of calls that applies values of the same type permutation
 #' @return
 #' @export
 #' @examples
-#' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "perm", budget = 7, tolerance = 1)
-#' feedback_loop("stringr", "str_detect", strategy = "random", budget = 343, tolerance = 1)
+#' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "perm", budget = 7)
+#' feedback_loop("stringr", "str_detect", strategy = "random", budget = 343)
 feedback_loop <- function (package = NA,
                            fun_name,
                            fun,
                            types = TYPES,
                            value_generator = generate_val,
-                           strategy = c("perm", "random", "fix"),
+                           strategy = c("perm", "perm-random", "random", "semi-random"),
                            budget,
-                           tolerance,
+                           ## tolerance,
                            db_path = NULL) {
 
-  state <- list()
+  states <- list()
 
   if (!is.na(package)) {
     fun <- get(fun_name, envir=getNamespace(package), mode="function")
@@ -41,16 +41,16 @@ feedback_loop <- function (package = NA,
 
   if (num_params == 0) {
     new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
-    state <- do.call(rbind, new_states)
+    states <- do.call(rbind, new_states)
 
   } else if (num_params > 9) {
-    state <- list(package, fun_name, num_params, NA, NA, 3L, NA, NA)
-    names(state) <- c("package", "fun_name", "num_param", "input", "output", "exitval", "warnmsg", "errmsg")
+    states <- list(package, fun_name, num_params, NA, NA, 3L, NA, NA)
+    names(states) <- c("package", "fun_name", "num_param", "input", "output", "exitval", "warnmsg", "errmsg")
   } else {
     param_names <- names(params)
 
     ## history <- list()           TODO: history can be used to be needed for generating unique permutation
-    tol_left <- tolerance
+    ## tol_left <- tolerance
     types_to_try <- list()
 
     switch(strategy,
@@ -61,6 +61,7 @@ feedback_loop <- function (package = NA,
 
              if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
 
+             ## 1. pick each permutation in the original order (perms row-by-row)
              apply(perms, MARGIN=1, FUN=function(perm) {
                types_to_try <- perm
 
@@ -71,109 +72,136 @@ feedback_loop <- function (package = NA,
                state <<- rbind(state, new_state)
              })
            },
+           "perm-random" = {
+             #matrix, array
+             #complexity: n^r (7^10 is the limit)
+             perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
+
+             if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
+
+             ## 2. randomize the pick of permutations
+             order <- sample.int(nrow(perms), budget, replace=FALSE)
+
+             lapply(seq(order), function(id) {
+               types_to_try <- perms[id, ,drop=FALSE]
+
+               mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
+
+               args <- params
+               new_state <- run_fun(package, fun_name, fun, args)
+               states <<- rbind(states, new_state)
+             })
+           },
            "random" = {
              while (budget > 0) {
-               if (length(state) == 0) {
-                 types_to_try <- generate_types_randomly(types, num_params)
-                 ## types_to_try <- lapply(seq(num_params), generate_types_randomly)
-               } else {
-                 last_state <- state[nrow(state),]
+               types_to_try <- generate_types_randomly(types, num_params)
 
-                 ## types_to_try <- feedback_adv(last_state, tol_left)
-
-                 switch(feedback_adv(last_state, tol_left),
-                        "generate_types_randomly" = {
-                          types_to_try <- generate_types_randomly(types, params);
-                          if(tol_left == 0) tol_left <- tolerance
-                        },
-                        "generate_types_by_errmsg" = {
-                          types_to_try <- generate_types_by_errmsg(last_state$errmsg, types, params);
-                          if(tol_left == 0) tol_left <- tolerance
-                        },
-                        "generate_types_repeat" = tol_left <- tol_left - 1
-                        )
-               }
-
-               ## mapply(function(name, type){
-               ##   params[[name]] <<- value_generator(type)
-               ## }, param_names, types_to_try)
-               mapply(function(name, type) {
-                 if (type != "db") {
-                   params[[name]] <<- value_generator(type, n = 3, col = 2)
-                 } else {
-                   params[[name]] <<- sample_val_from_db(path = db_path)
-                 }
+               mapply(function(name, type){
+                 params[[name]] <<- value_generator(type, n=3, col=2)
                }, param_names, types_to_try)
 
                args <- params
                new_state <- run_fun(package, fun_name, fun, args)
-               state <- rbind(state, new_state)
+               states <- rbind(states, new_state)
                budget <- budget - 1
              }
            },
-           "fixed" = {}
-           )
+           "semi-random" = {
+             while(budget > 0) {
+               if (length(states) == 0) {
+                 generate_types <- generate_types_randomly
+               } else {
+                 last_state <- states[nrow(states), ]
+                 generate_types <- feedback(last_state, num_params)
+               }
+
+               types_to_try <- generate_types(types, num_params, last_state)
+
+               if(length(types_to_try) > 0) {
+                 #TODO
+               }
+
+               mapply(function(name, type){
+                 params[[name]] <<- value_generator(type, n=3, col=2)
+               }, param_names, types_to_try)
+
+               args <- params
+               new_state <- run_fun(package, fun_name, fun, args)
+               states <- rbind(states, new_state)
+               budget <- budget - 1
+             }
+           })
   }
 
-  rownames(state) <- NULL
-  state
+  rownames(states) <- NULL
+  states
 }
 
 #' decides whether to use a new set of types in the next run or not
-#' @param history    sets of types used so far
+## @param history    sets of types used so far
 #' @param state      state of the last run
-#' @param tolerance  how many times to try the same set of types
+## @param tolerance  how many times to try the same set of types
 #' @return           a set of types to try
-feedback_adv <- function(state, tolerance) {
-  if (tolerance == 0 || state$exitval == 0L || state$exitval == 1L) {
-    feedback <- "generate_types_randomly"
-  } else if(tolerance == 0 && state$exitval == 2L) {
-    feedback <- "generate_types_randomly"                #TODO: upgrade to by_errmsg 
+feedback <- function(state, num_params) {
+  if(state$exitval == 0L || state$exitval == 1L) {
+    if (num_params > 1)
+      return(generate_types_semi_randomly)
+    else
+      return(generate_types_randomly)
   } else {
-    feedback <- "generate_types_repeat"
+    return(generate_types_randomly)
+    docker## if (tolerance > 0) {
+    ##   return(generate_types_again)
+    ## } else {
+    ##   return(generate_types_randomly)
+    ## }
   }
-
-  feedback
 }
 
-## feedback_adv <- function(state, tol_left, tol, types, params) {
-##   if (tolerance == 0 || state$exitval == 0L || state$exitval == 1L) {
-##     indices <- sample.int(length(types), length(params))
-##     random_perm <- lapply(indices, function(id) types[[id]])
 
-##     if(tolerance == 0) tolerance <<- tol
-
-##     return(random_perm)
-
-##   } else if (tolernace == 0 && state$exitval == 2L) {
-##     msg <- state$errmsg$message
-##     splited_msg <- strsplit(msg, "[` ]+")
-
-##     param_match <- which(params %in% splited_msg)
-##     type_match <- which(types %in% sploted_msg)
-
-##     guided_perm <- list()
-##   }
-## }
-
-## feedback_adv <- function(state, tolerance, ...) {
-##   if(tolerance == 0 || state$exitval == 0L || state$exitval == 1L) {
-##     return(generate_types_new(...))
-##   } else if (tolernace == 0 && state$exitval == 2L) {
-##     return(generate_types_new(..., state$errmsg))       #TODO: generate_types_by_errmsg(state$errmsg, ...)
-##   } else {
-##     return(generate_types_again(..., state$input))
-##   }
-## }
-
-generate_types_randomly <- function(types, params) {
-  indices <- sample.int(length(types), length(params))
+generate_types_randomly <- function(types, num_params, state=NULL) {
+  indices <- sample.int(length(types), num_params)
   random_perm <- lapply(indices, function(id) types[[id]])
 
-  random_perm #TODO: generating a unique permutation and exhausting all permutations
+  random_perm
 }
 
 
+generate_types_semi_randomly <- function(types, num_params, state=NULL) {
+  browser()
+  suc_types <- reverse_typing(state$input)
+  perm <- t(as.matrix(suc_types))
+
+  for (i in seq(num_params)) {
+    lapply()
+  }
+
+  semi_random_perms <- lapply(seq(num_params), function(x) {
+    indices <- sample.int(length(types), num_params-1)
+    fixed <- lapply(indices, function(id) types[[id]])
+
+    c(suc_types[[1]], fixed)
+  })
+
+  as.matrix(semi_random_perms)
+}
+
+generate_types_again <- function(types, num_params, state=NULL) {
+  reverse_typing(state$input)
+}
+
+
+reverse_typing <- function (inputs) {
+  lapply(inputs, function(arg) {
+    if(class(arg)[[1]] == "matrix") {
+      return("dim2")
+    } else if (length(arg) > 1) {
+      return("dim1")
+    } else {
+      return(typeof(arg))
+    }
+  })
+}
 ## generate_types_new <- function(types, params, err) {
 ##   if(is.missing(err)) {
 ##     indices <- sample.int(length(types), length(params))
@@ -227,12 +255,14 @@ generate_types_randomly <- function(types, params) {
 #' @param fun        a closure
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
+#' @export
 run_fun <- function(package = NA, fun_name, fun, args) {
   res <- tryCatch ({
     output <- do.call(fun, as.list(args))
     list(package, fun_name, length(args), args, output, 0L, NA, NA)
   }, warning = function(w) {
     list(package, fun_name, length(args), args, NA, 1L, w, NA)
+    invokeRestart("muffleWarning")
   }, error = function(e) {
     list(package, fun_name, length(args), args, NA, 2L, NA, e)
   })
@@ -296,37 +326,43 @@ sample_val_from_db <- function(db_path) {
   val
 }
 
-#' @param      data  generated data from running feedback_loop
+#' @param      data  generated from running feedback_loop
 #' @return     a data.frame with inferred input, output types, and signatures
 #' @importFrom contractr  infer_type
 #' @export
 #' @examples
-#' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343, tolerance = 1)
+#' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343)
 #' add_signature(data)
-add_signature <- function(data) {
-  suc <- data[data[,6] == 0L,]
+add_sigs <- function(data) {
+  input_types <- lapply(data[ ,4,drop=FALSE], function(input) lapply(input, infer_type))
+  output_types <- lapply(data[,5], function(output) infer_type(output))
 
-  ## if(is.null(ncol(suc))) {
-  ##   input_types <- lapply(suc$input, infer_type)
-  ## } else {
-  ##   input_types <- lapply(suc[,4], function(input) lapply(input, infer_type))
-  ## }
-  input_types <- lapply(suc[ ,4,drop=FALSE], function(input) lapply(input, infer_type))
-  output_types <- lapply(suc[,5], function(output) infer_type(output))
-
-  df <- cbind(suc, input_types = input_types, output_types = output_types)
+  df <- cbind(data, input_types = input_types, output_types = output_types)
   sig <- apply(df[,9:10], MARGIN = 1,  FUN = function(x) paste(paste0(x$input, collapse = " x "), x$output, sep = " -> "))
 
   cbind(df, sig)
 }
 
-#' @param      df  a data.frame generated from running add_signature
+#' @param      ddata  generated from add_signature
 #' @return     the number of unique signatures
 #' @export
 #' @examples
-#' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343, tolerance = 1)
+#' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343)
 #' res <- add_signature(data)
-#' evaluate(res)
-evaluate <- function(df) {
-  length(unique(df[,11]))
+#' num_sigs(res)
+num_sigs <- function(data) {
+  sucs <- data[data[,6] == 0L, ,drop=FALSE]
+  warns <- data[data[,6] == 1L, ,drop=FALSE]
+
+  sucs_or_warns <- rbind(sucs, warns)
+
+  length(unique(sucs_or_warns[,11]))
+}
+
+#'@export
+compute_suc <- function(data_with_sigs) {
+  fail <- data_with_sigs[data_with_sigs[,6] == 2L, ,drop=FALSE]
+
+  percentage <- num_sigs(data_with_sigs)/unique(length(fail[,9])) * 100
+  round(percentage, digits=1)
 }
