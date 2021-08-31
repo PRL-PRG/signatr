@@ -11,9 +11,7 @@ library(tibble)
 
 data_dir <- "/mnt/data/signatr-experiment-hyeyoung/run/experiment/"
 
-package_files <- list.files(path = data_dir, pattern = paste0(params$package, "*"))
-
-data <- readRDS(paste0(data_dir, package_files[[1]]))
+data <- readRDS(file.path(data_dir, paste0(params$package, "_data.RDS")))
 ```
 
 ### The Result of Experiment
@@ -50,7 +48,7 @@ tibble_data[0,]
 The rate of success is calculated by the number of unique signatures inferred / the number of unique input type tried.
 
 ```{r}
-success <- read.csv(paste0(data_dir, package_files[[2]]))
+success <- read.csv(file.path(data_dir, paste0(params$package, "_success.csv")))
 success
 ```
 
