@@ -67,7 +67,7 @@ meta_df <- data.frame(packge = package,
                       ## num_fun_param123 = param1 + param2 + param3,
                       ## calls_to_param123 = nrow(calls_param123),
                       ## success_param123 = calls_param123_success_rate,
-                      time_running = (running$toc - running$tic))
+                      time_running = round(running$toc - running$tic, digits=1))
 
 
 write.csv(meta_df, paste0(package, "_metadata.csv"), row.names=FALSE)

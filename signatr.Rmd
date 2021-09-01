@@ -45,10 +45,18 @@ tibble_data[0,]
 
 ### The Rate of Success
 
-The rate of success is calculated by the number of unique signatures inferred / the number of unique input type tried.
+The rate of success is calculated by the number of unique signatures inferred / the number of unique input type tried per function.
 
 ```{r}
 success <- read.csv(file.path(data_dir, paste0(params$package, "_success.csv")))
 success
 ```
 
+### Some metadata
+
+The running time and success rate for the package is recorded.
+
+```{r}
+metadata <- read.csv(file.path(data_dir, paste0(params$package, "_metadata.csv")))
+metadata
+```
