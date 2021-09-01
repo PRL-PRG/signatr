@@ -4,9 +4,7 @@ library(signatr)
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (length(args) != 3) {
-  stop("wrong number of arguments!")
-}
+if (length(args) != 3) stop("required arguments: [package] [strategy] [budget]")
 
 package <- args[[1]]
 strategy <- args[[2]]
@@ -29,12 +27,11 @@ fun_df <- data.frame(
   fun = exported_functions,
   num_param = unlist(num_params))
 
-filtered <- fun_df[fun_df$num_param < 10, ]
+if (stringr::str_detect(strategy, "perm")) fun_df <- fun_df[fun_df$num_param < 10, ]
 
 param1 <- nrow(fun_df[fun_df$num_param == 1,])
 param2 <- nrow(fun_df[fun_df$num_param == 2,])
 param3 <- nrow(fun_df[fun_df$num_param == 3,])
-
 
 print(paste0("Number of functions: ", length(exported_functions)))
 print(paste0("Number of one argument functions: ", param1))
@@ -42,7 +39,7 @@ print(paste0("Number of two argument functions: ", param2))
 print(paste0("Number of three argument functions: ", param3))
 
 tic("running functions")
-data <- lapply(filtered$fun, function(fun) feedback_loop(package = package,
+data <- lapply(fun_df$fun, function(fun) feedback_loop(package = package,
                                                          fun_name = fun,
                                                          strategy = strategy,
                                                          budget = budget))
@@ -53,17 +50,17 @@ package_data <- purrr::map_dfr(data, function(x)x)
 saveRDS(package_data, file = paste0(package, "_data.RDS"))
 
 
-suc_rates <- lapply(data, compute_suc)
-
-res <- cbind(package = package, fun = filtered$fun, success = suc_rates)
+success <- unlist(lapply(data, compute_suc))
+res <- purrr::map_dfc(list(package=package, fun=fun_df$fun, success=success), function(x)x)
 write.csv(res, paste0(package, "_success.csv"), row.names=FALSE)
 
 
 meta_df <- data.frame(packge = package,
-                      num_fun = length(exported_functions),
+                      num_exported_fun = length(exported_functions),
+                      num_experimented_fun = nrow(fun_df),
                       budget = budget,
                       total_calls = nrow(package_data),
-                      success_all = round(sum(success$success) / nrow(success), digits=1),
+                      success_all = round(mean(res$success), digits=1),
                       ## num_fun_param123 = param1 + param2 + param3,
                       ## calls_to_param123 = nrow(calls_param123),
                       ## success_param123 = calls_param123_success_rate,
