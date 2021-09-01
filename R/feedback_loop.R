@@ -68,7 +68,7 @@ feedback_loop <- function (package = NA,
 
                args <- params
                new_state <- run_fun(package, fun_name, fun, args)
-               states <<- rbind(states, new_state)
+               states <<- purrr::map_dfr(list(states, new_state), function(x) x)
              })
            },
            "perm-random" = {
@@ -76,7 +76,7 @@ feedback_loop <- function (package = NA,
              #complexity: n^r (7^10 is the limit)
              perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
 
-             if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
+             if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE] else budget <- nrow(perms)
 
              ## 2. randomize the pick of permutations
              order <- sample.int(nrow(perms), budget, replace=FALSE)
@@ -88,7 +88,7 @@ feedback_loop <- function (package = NA,
 
                args <- params
                new_state <- run_fun(package, fun_name, fun, args)
-               states <<- rbind(states, new_state)
+               states <<- purrr::map_dfr(list(states, new_state), function(x) x)
              })
            },
            "random" = {
@@ -102,7 +102,6 @@ feedback_loop <- function (package = NA,
                args <- params
                new_state <- run_fun(package, fun_name, fun, args)
                states <- purrr::map_dfr(list(states, new_state), function(x) x)
-               ## states <- rbind(states, new_state)
                budget <- budget - 1
              }
            },
@@ -127,7 +126,7 @@ feedback_loop <- function (package = NA,
 
                args <- params
                new_state <- run_fun(package, fun_name, fun, args)
-               states <- rbind(states, new_state)
+               states <- purrr::map_dfr(list(states, new_state), function(x) x)
                budget <- budget - 1
              }
            },
@@ -221,7 +220,7 @@ run_fun <- function(package = NA, fun_name, fun, args) {
   input_type <- lapply(args, contractr::infer_type)
   combined <- paste0(input_type, collapse=" x ")
 
-  res <- tibble(package=package, fun_name=fun_name, num_param=length(args), input_type=combined, output_type=NA, exitval=NA, warnmsg=NA, errmsg=NA, sig=NA)
+  res <- tibble::tibble(package=package, fun_name=fun_name, num_param=length(args), input_type=combined, output_type=NA, exitval=NA, warnmsg=NA, errmsg=NA, sig=NA)
 
   tryCatch (withCallingHandlers({
     output <- do.call(fun, as.list(args))
