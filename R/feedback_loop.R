@@ -16,6 +16,7 @@ TYPES <- c(DIM0, DIM1, DIM2)
 #' @param  budget          number of calls to fun
 ## @param  tolerance       number of calls that applies values of the same type permutation
 #' @return
+#' @importFrom purrr map_dfr
 #' @export
 #' @examples
 #' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "perm", budget = 7)
@@ -40,7 +41,7 @@ feedback_loop <- function (package = NA,
   num_params <- length(params)
 
   if (num_params == 0) {
-    new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list(), list()))
+    new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
     states <- do.call(rbind, new_states)
 
   } else if (num_params > 9) {
@@ -49,8 +50,6 @@ feedback_loop <- function (package = NA,
   } else {
     param_names <- names(params)
 
-    ## history <- list()           TODO: history can be used to be needed for generating unique permutation
-    ## tol_left <- tolerance
     types_to_try <- list()
 
     switch(strategy,
@@ -68,7 +67,7 @@ feedback_loop <- function (package = NA,
                mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
 
                args <- params
-               new_state <- run_fun(package, fun_name, fun, as.list(perm), args)
+               new_state <- run_fun(package, fun_name, fun, args)
                states <<- rbind(states, new_state)
              })
            },
@@ -88,7 +87,7 @@ feedback_loop <- function (package = NA,
                mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
 
                args <- params
-               new_state <- run_fun(package, fun_name, fun, as.list(types_to_try), args)
+               new_state <- run_fun(package, fun_name, fun, args)
                states <<- rbind(states, new_state)
              })
            },
@@ -101,8 +100,9 @@ feedback_loop <- function (package = NA,
                }, param_names, types_to_try)
 
                args <- params
-               new_state <- run_fun(package, fun_name, fun, types_to_try, args)
-               states <- rbind(states, new_state)
+               new_state <- run_fun(package, fun_name, fun, args)
+               states <- purrr::map_dfr(list(states, new_state), function(x) x)
+               ## states <- rbind(states, new_state)
                budget <- budget - 1
              }
            },
@@ -126,7 +126,7 @@ feedback_loop <- function (package = NA,
                }, param_names, types_to_try)
 
                args <- params
-               new_state <- run_fun(package, fun_name, fun, types_to_try, args)
+               new_state <- run_fun(package, fun_name, fun, args)
                states <- rbind(states, new_state)
                budget <- budget - 1
              }
@@ -206,52 +206,7 @@ reverse_typing <- function (inputs) {
     }
   })
 }
-## generate_types_new <- function(types, params, err) {
-##   if(is.missing(err)) {
-##     indices <- sample.int(length(types), length(params))
-##     random_perm <- lapply(indices, function(id) types[[id]])
 
-##     return(random_perm)
-##   } else {
-##     keywords <- c("non-numeric")
-##     all <- c(types, keywords)
-
-##     num_params <- length(params)
-
-##     msg <- err$message
-##     splited_msg <- strsplit(msg, "[` ]+")
-
-##     param_match <- which(params %in% splited_msg)
-##     type_match <- which(all %in% splited_msg)
-
-##     guided_perm <- list()
-
-##     ## if(type_match) {
-##     ##   if (param_match) {
-
-##     ##   } else {
-
-##     ##   }
-
-##     ## }
-
-##                                         # TODO: assuming length(param_match) = 1
-##     if (param_match && type_match) {
-##       indices <- sample.int(length(types), num_params)
-
-##       mapply(function(x, y) {
-##         if (x == param_match)
-##           perm[[x]] <- type_match
-##         else perm[[x]] <- types[[y]]
-##       }, seq(num_params), indices)
-
-##       return (guided_perm)
-##     } else {
-##       return(generate_types_randomly(types, num_params))
-##     }
-##   }
-
-## }
 
 #' runs given function with args and stores the result in a list
 #' @param package    package name if the function is a library function
@@ -259,19 +214,33 @@ reverse_typing <- function (inputs) {
 #' @param fun        a closure
 #' @param args       arguments to run the function with
 #' @return           list of metadata and running result
+#' @importFrom tibble  tibble
+#' @importFrom contractr  infer_type
 #' @export
-run_fun <- function(package = NA, fun_name, fun, types, args) {
-  res <- tryCatch ({
+run_fun <- function(package = NA, fun_name, fun, args) {
+  input_type <- lapply(args, contractr::infer_type)
+  combined <- paste0(input_type, collapse=" x ")
+
+  res <- tibble(package=package, fun_name=fun_name, num_param=length(args), input_type=combined, output_type=NA, exitval=NA, warnmsg=NA, errmsg=NA, sig=NA)
+
+  tryCatch (withCallingHandlers({
     output <- do.call(fun, as.list(args))
-    list(package, fun_name, length(args), types, args, output, 0L, NA, NA)
-  }, warning = function(w) {
-    list(package, fun_name, length(args), types, args, NA, 1L, w, NA)
+    output_type <- contractr::infer_type(output)
+
+    res$output_type <- output_type
+    if (is.na(res$exitval)) res$exitval <- 0L
+    res$sig <- paste(combined, output_type, sep=" -> ")
+  },
+  warning = function(w) {
+    res$exitval <<- 1L
+    res$warnmsg <<- as.character(w)
     invokeRestart("muffleWarning")
-  }, error = function(e) {
-    list(package, fun_name, length(args), types, args, NA, 2L, NA, e)
+  }),
+  error = function(e) {
+    res$exitval <<- 2L
+    res$errmsg <<- as.character(e)
   })
 
-  names(res) <- c("package", "fun_name", "num_param", "types", "input", "output", "exitval", "warnmsg", "errmsg")
   res
 }
 
@@ -330,42 +299,27 @@ sample_val_from_db <- function(db_path) {
   val
 }
 
-#' @param      data  generated from running feedback_loop
-#' @return     a data.frame with inferred input, output types, and signatures
-#' @importFrom contractr  infer_type
-#' @export
-#' @examples
-#' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343)
-#' add_signature(data)
-add_sigs <- function(data) {
-  input_types <- lapply(data[ ,5,drop=FALSE], function(input) lapply(input, infer_type))
-  output_types <- lapply(data[,6], function(output) infer_type(output))
-
-  df <- cbind(data, input_types = input_types, output_types = output_types)
-  sig <- apply(df[,10:11], MARGIN = 1,  FUN = function(x) paste(paste0(x$input, collapse = " x "), x$output, sep = " -> "))
-
-  cbind(df, sig)
-}
 
 #' @param      ddata  generated from add_signature
 #' @return     the number of unique signatures
+#' @importFrom purrr map_dfr
 #' @export
 #' @examples
 #' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343)
 #' res <- add_signature(data)
 #' num_sigs(res)
 num_suc_sigs <- function(data) {
-  sucs <- data[data[,7] == 0L, ,drop=FALSE]
-  warns <- data[data[,7] == 1L, ,drop=FALSE]
+  sucs <- data[data$exitval == 0L, ,drop=FALSE]
+  warns <- data[data$exitval == 1L, ,drop=FALSE]
 
-  sucs_or_warns <- rbind(sucs, warns)
+  sucs_or_warns <- purrr::map_dfr(list(sucs, warns), function(x) x)
 
-  length(unique(sucs_or_warns[,12]))
+  length(unique(sucs_or_warns$input_type))
 }
 
 #'@export
-compute_suc <- function(data_with_sigs) {
-  percentage <- num_suc_sigs(data_with_sigs)/length(unique(data_with_sigs[,10])) * 100
+compute_suc <- function(data) {
+  percent <- num_suc_sigs(data)/length(unique(data$input_type)) * 100
 
-  round(percentage, digits=1)
+  round(percent, digits=1)
 }
