@@ -44,9 +44,6 @@ feedback_loop <- function (package = NA,
     new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
     states <- do.call(rbind, new_states)
 
-  } else if (num_params > 9) {
-    states <- list(package, fun_name, num_params, NA, NA, NA, 3L, NA, NA)
-    names(states) <- c("package", "fun_name", "num_param", "types", "input", "output", "exitval", "warnmsg", "errmsg")
   } else {
     param_names <- names(params)
 
@@ -66,9 +63,7 @@ feedback_loop <- function (package = NA,
 
                mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
 
-               args <- params
-               new_state <- run_fun(package, fun_name, fun, args)
-               states <<- purrr::map_dfr(list(states, new_state), function(x) x)
+               states <<- update_states(states, package, fun_name, fun, params)
              })
            },
            "perm-random" = {
@@ -86,27 +81,26 @@ feedback_loop <- function (package = NA,
 
                mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
 
-               args <- params
-               new_state <- run_fun(package, fun_name, fun, args)
-               states <<- purrr::map_dfr(list(states, new_state), function(x) x)
+               states <<- update_states(states, package, fun_name, fun, params)
              })
            },
            "random" = {
              while (budget > 0) {
+               budget <- budget - 1
+
                types_to_try <- generate_types_randomly(types, num_params)
 
                mapply(function(name, type){
                  params[[name]] <<- value_generator(type, n=3, col=2)
                }, param_names, types_to_try)
 
-               args <- params
-               new_state <- run_fun(package, fun_name, fun, args)
-               states <- purrr::map_dfr(list(states, new_state), function(x) x)
-               budget <- budget - 1
+               states <- update_states(states, package, fun_name, fun, params)
              }
            },
            "semi-random" = {
              while(budget > 0) {
+               budget <- budget - 1
+
                if (length(states) == 0) {
                  generate_types <- generate_types_randomly
                } else {
@@ -124,17 +118,33 @@ feedback_loop <- function (package = NA,
                  params[[name]] <<- value_generator(type, n=3, col=2)
                }, param_names, types_to_try)
 
-               args <- params
-               new_state <- run_fun(package, fun_name, fun, args)
-               states <- purrr::map_dfr(list(states, new_state), function(x) x)
-               budget <- budget - 1
+               states <- update_states(states, package, fun_name, fun, params)
              }
+           },
+           "random-db" = {
+             record::open_db(db_path, create = FALSE)
+
+             while (budget > 0) {
+               budget <- budget - 1
+
+               lapply(param_names, function(name) params[[name]] <<- value_generator(db=TRUE, db_path=db_path))
+
+               states <- update_states(states, package, fun_name, fun, params)
+             }
+
+             record::close_db()
            },
            )
   }
 
   rownames(states) <- NULL
   states
+}
+
+update_states <- function(states, package, fun_name, fun, params) {
+  args <- params
+  new_state <- run_fun(package, fun_name, fun, args)
+  purrr::map_dfr(list(states, new_state), function(x) x)
 }
 
 #' decides whether to use a new set of types in the next run or not
@@ -251,10 +261,14 @@ run_fun <- function(package = NA, fun_name, fun, args) {
 #' @param col (optional)        number of columns
 #' @return
 #' @export
-generate_val <- function(type, inner_type=NULL, n=NULL, col=NULL) {
+generate_val <- function(type=NULL, inner_type=NULL, n=NULL, col=NULL, db = FALSE, db_path=NULL) {
   val <- sample.int(255, size = 1)
   l <- list()
   t <- sample.int(length(DIM0), size = 1)
+
+  if(db) {
+    return(sample_val_from_db(db_path, type=type))
+  }
 
   switch (type,
           "logical" =  as.logical(val),
@@ -289,11 +303,12 @@ generate_val <- function(type, inner_type=NULL, n=NULL, col=NULL) {
           )
 }
 
-sample_val_from_db <- function(db_path) {
-  record::open_db(db_path, create = FALSE)
-
-  val <- record::sample_val()
-  record::close_db()
+sample_val_from_db <- function(db_path, type=NULL) {
+  val <- if(is.null(type)) {
+           record::sample_val()
+         } else {
+           record::sample_val(type=type)
+         }
 
   val
 }
