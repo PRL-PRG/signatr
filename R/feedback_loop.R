@@ -20,7 +20,7 @@ TYPES <- c(DIM0, DIM1, DIM2)
 #' @export
 #' @examples
 #' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "perm", budget = 7)
-#' feedback_loop("stringr", "str_detect", strategy = "random", budget = 343)
+#' feedback_loop("stringr", "str_detect", strategy = "semi-random", budget = 343)
 feedback_loop <- function (package = NA,
                            fun_name,
                            fun,
@@ -88,7 +88,7 @@ feedback_loop <- function (package = NA,
              while (budget > 0) {
                budget <- budget - 1
 
-               types_to_try <- generate_types_randomly(types, num_params)
+               types_to_try <- generate_types_randomly(types, param_names)
 
                mapply(function(name, type){
                  params[[name]] <<- value_generator(type, n=3, col=2)
@@ -105,10 +105,10 @@ feedback_loop <- function (package = NA,
                  generate_types <- generate_types_randomly
                } else {
                  last_state <- states[nrow(states), ]
-                 generate_types <- feedback(last_state, num_params)
+                 generate_types <- feedback(last_state)
                }
 
-               types_to_try <- generate_types(types, num_params, last_state)
+               types_to_try <- generate_types(types, param_names, last_state)
 
                if(length(types_to_try) > 0) {
                  #TODO
@@ -122,6 +122,8 @@ feedback_loop <- function (package = NA,
              }
            },
            "random-db" = {
+             if (is.null(db_path)) stop("provide the path to db")
+
              record::open_db(db_path, create = FALSE)
 
              while (budget > 0) {
@@ -152,15 +154,12 @@ update_states <- function(states, package, fun_name, fun, params) {
 #' @param state      state of the last run
 ## @param tolerance  how many times to try the same set of types
 #' @return           a set of types to try
-feedback <- function(state, num_params) {
+feedback <- function(state) {
   if(state$exitval == 0L || state$exitval == 1L) {
-    if (num_params > 1)
-      return(generate_types_semi_randomly)
-    else
-      return(generate_types_randomly)
+    return(generate_types_semi_randomly)
   } else {
     return(generate_types_randomly)
-    docker## if (tolerance > 0) {
+    ## if (tolerance > 0) {
     ##   return(generate_types_again)
     ## } else {
     ##   return(generate_types_randomly)
@@ -169,51 +168,42 @@ feedback <- function(state, num_params) {
 }
 
 
-generate_types_randomly <- function(types, num_params, state=NULL) {
-  indices <- sample.int(length(types), num_params)
+generate_types_randomly <- function(types, param_names, state=NULL) {
+  indices <- sample.int(length(types), length(param_names))
   random_perm <- lapply(indices, function(id) types[[id]])
 
   random_perm
 }
 
-generate_unique_types <- function(types, num_params, states=NULL) {
+generate_unique_types <- function(types, param_names, state=NULL) {
   #TODO
 }
 
 
-generate_types_semi_randomly <- function(types, num_params, state=NULL) {
-  #TODO
-  suc_types <- reverse_typing(state$input)
-  ## perm <- t(as.matrix(suc_types))
+generate_types_semi_randomly <- function(types, param_names, state=NULL) {
+  #TODO: length(param_names == 1)
+  input_type <- state$input_type
+  input_types <- stringr::str_split(input_type, " x ")[[1]]
 
-  perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
-  ## apply(perms, MARGIN = 1, function(perm) list(list(suc_types[[1], perm[1,], perm])))
+  num_params <- length(param_names)
+  temp_perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
 
-  ## semi_random_perms <- lapply(seq(num_params), function(x) {
-  ##   indices <- sample.int(length(types), num_params-1)
-  ##   fixed <- lapply(indices, function(id) types[[id]])
+  res <- data.frame()
 
-  ##   c(suc_types[[1]], fixed)
-  ## })
+  mapply(function(type, i) {
+    fixed_perms <- cbind(type, temp_perms)
+    colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
+    browser()
+    res <<- rbind(res, fixed_perms)
+    }, input_types, seq(num_params))
 
-  ## as.matrix(semi_random_perms)
+  browser()
+  as.matrix(res)
 }
 
-generate_types_again <- function(types, num_params, states=NULL) {
-  reverse_typing(state$input)
-}
 
-
-reverse_typing <- function (inputs) {
-  lapply(inputs, function(arg) {
-    if(class(arg)[[1]] == "matrix") {
-      return("dim2")
-    } else if (length(arg) > 1) {
-      return("dim1")
-    } else {
-      return(typeof(arg))
-    }
-  })
+generate_types_again <- function(types, param_names, state=NULL) {
+  state$input_type
 }
 
 
