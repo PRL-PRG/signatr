@@ -25,7 +25,10 @@ cat(sprintf("Merging %s dbs\n\n", num_dbs))
 gbov <- paste0(run_dir, "/gbov")
 open_db(gbov, create = TRUE)
 
-lapply(dbs, function(db) merge_db(db))
+lapply(dbs, function(db) {
+  cat("- merging", db, "\n") 
+  merge_db(db)
+})
 
 cat(sprintf("%s values are stored in gbov\n\n", size_db()))
 
@@ -33,4 +36,3 @@ close_db()
 
 end <- Sys.time()
 round(end - start, digits = 2)
-
