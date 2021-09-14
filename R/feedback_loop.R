@@ -19,17 +19,18 @@ TYPES <- c(DIM0, DIM1, DIM2)
 #' @importFrom purrr map_dfr
 #' @export
 #' @examples
-#' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "perm", budget = 7)
-#' feedback_loop("stringr", "str_detect", strategy = "semi-random", budget = 343)
+#' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "precompute", budget = 7)
+#' feedback_loop("stringr", "str_detect", strategy = "random-feedback", budget = 343)
 feedback_loop <- function (package = NA,
                            fun_name,
                            fun,
                            types = TYPES,
                            value_generator = generate_val,
-                           strategy = c("perm", "perm-random", "random", "semi-random"),
+                           strategy = c("precompute", "precompute-random", "random", "random-feedback", "random-db"),
                            budget,
                            ## tolerance,
                            db_path = NULL) {
+  print(fun_name)
 
   states <- list()
 
@@ -50,7 +51,7 @@ feedback_loop <- function (package = NA,
     types_to_try <- list()
 
     switch(strategy,
-           "perm" = {
+           "precompute" = {
              #matrix, array
              #complexity: n^r (7^10 is the limit)
              perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
@@ -66,7 +67,7 @@ feedback_loop <- function (package = NA,
                states <<- update_states(states, package, fun_name, fun, params)
              })
            },
-           "perm-random" = {
+           "precompute-random" = {
              #matrix, array
              #complexity: n^r (7^10 is the limit)
              perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
@@ -86,8 +87,6 @@ feedback_loop <- function (package = NA,
            },
            "random" = {
              while (budget > 0) {
-               budget <- budget - 1
-
                types_to_try <- generate_types_randomly(types, param_names)
 
                mapply(function(name, type){
@@ -95,12 +94,11 @@ feedback_loop <- function (package = NA,
                }, param_names, types_to_try)
 
                states <- update_states(states, package, fun_name, fun, params)
+               budget <- budget - 1
              }
            },
-           "semi-random" = {
+           "random-feedback" = {
              while(budget > 0) {
-               budget <- budget - 1
-
                if (length(states) == 0) {
                  generate_types <- generate_types_randomly
                } else {
@@ -110,28 +108,43 @@ feedback_loop <- function (package = NA,
 
                types_to_try <- generate_types(types, param_names, last_state)
 
-               if(length(types_to_try) > 0) {
-                 #TODO
+               browser(expr = {length(types_to_try) > 10})
+
+               if(is_permutations(types_to_try)) {
+                 perms <- types_to_try
+
+                 if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
+
+                 apply(perms, MARGIN=1, FUN=function(perm) {
+                   types_to_try <- perm
+
+                   mapply(function(name, type) {
+                     browser()
+                     params[[name]] <<- value_generator(type, n = 3, col = 2)},
+                     param_names, types_to_try)
+
+                   states <<- update_states(states, package, fun_name, fun, params)
+                   budget <<- budget - 1
+                 })
+               } else {
+                 mapply(function(name, type){
+                   params[[name]] <<- value_generator(type, n=3, col=2)
+                 }, param_names, types_to_try)
+
+                 states <- update_states(states, package, fun_name, fun, params)
+                 budget <- budget - 1
                }
-
-               mapply(function(name, type){
-                 params[[name]] <<- value_generator(type, n=3, col=2)
-               }, param_names, types_to_try)
-
-               states <- update_states(states, package, fun_name, fun, params)
              }
            },
            "random-db" = {
-             if (is.null(db_path)) stop("provide the path to db")
-
+             if (is.null(db_path)) stop("missing the path to db")
              record::open_db(db_path, create = FALSE)
 
              while (budget > 0) {
-               budget <- budget - 1
-
                lapply(param_names, function(name) params[[name]] <<- value_generator(db=TRUE, db_path=db_path))
 
                states <- update_states(states, package, fun_name, fun, params)
+               budget <- budget - 1
              }
 
              record::close_db()
@@ -141,6 +154,10 @@ feedback_loop <- function (package = NA,
 
   rownames(states) <- NULL
   states
+}
+
+is_permutations <- function(sth) {
+  !is.null(nrow(sth))
 }
 
 update_states <- function(states, package, fun_name, fun, params) {
@@ -155,24 +172,27 @@ update_states <- function(states, package, fun_name, fun, params) {
 ## @param tolerance  how many times to try the same set of types
 #' @return           a set of types to try
 feedback <- function(state) {
-  if(state$exitval == 0L || state$exitval == 1L) {
-    return(generate_types_semi_randomly)
-  } else {
-    return(generate_types_randomly)
-    ## if (tolerance > 0) {
-    ##   return(generate_types_again)
-    ## } else {
-    ##   return(generate_types_randomly)
-    ## }
-  }
+  strategy <- if(state$exitval == 0L || state$exitval == 1L) {
+                generate_perms_fixed
+              } else {
+                generate_types_semi_randomly
+              }
+  strategy
 }
 
 
 generate_types_randomly <- function(types, param_names, state=NULL) {
-  indices <- sample.int(length(types), length(param_names))
+  indices <- sample.int(length(types), length(param_names), replace = TRUE)
   random_perm <- lapply(indices, function(id) types[[id]])
 
   random_perm
+}
+
+generate_types_semi_randomly <- function(types, param_names, state=NULL) {
+  input_type <- state$input_type
+  input_types <- stringr::str_split(input_type, " x ")[[1]]
+
+  lapply(input_types, function(type) sample(setdiff(types, type), 1))
 }
 
 generate_unique_types <- function(types, param_names, state=NULL) {
@@ -180,7 +200,7 @@ generate_unique_types <- function(types, param_names, state=NULL) {
 }
 
 
-generate_types_semi_randomly <- function(types, param_names, state=NULL) {
+generate_perms_fixed <- function(types, param_names, state=NULL) {
   #TODO: length(param_names == 1)
   input_type <- state$input_type
   input_types <- stringr::str_split(input_type, " x ")[[1]]
@@ -193,11 +213,9 @@ generate_types_semi_randomly <- function(types, param_names, state=NULL) {
   mapply(function(type, i) {
     fixed_perms <- cbind(type, temp_perms)
     colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
-    browser()
     res <<- rbind(res, fixed_perms)
     }, input_types, seq(num_params))
 
-  browser()
   as.matrix(res)
 }
 
@@ -254,7 +272,8 @@ run_fun <- function(package = NA, fun_name, fun, args) {
 generate_val <- function(type=NULL, inner_type=NULL, n=NULL, col=NULL, db = FALSE, db_path=NULL) {
   val <- sample.int(255, size = 1)
   l <- list()
-  t <- sample.int(length(DIM0), size = 1)
+  ## t <- sample.int(length(DIM0), size = 1)
+  T <- sample(DIM0, 1)
 
   if(db) {
     return(sample_val_from_db(db_path, type=type))
@@ -272,20 +291,20 @@ generate_val <- function(type=NULL, inner_type=NULL, n=NULL, col=NULL, db = FALS
             if (n == 0) {
               return(l)
             } else {
-              mapply(function(i, t) l[[i]] <<- generate_val(DIM0[[t]]), seq(n), random_ts)
+              mapply(function(i, t) l[[i]] <<- generate_val(T, seq(n), random_ts))
               l
             }
           },
           "dim1" = {
             if(is.null(inner_type)) {
-              return(rep(n, x = generate_val(DIM0[[t]])))
+              return(rep(n, x = generate_val(T)))
             } else {
               return(rep(n, x = generate_val(inner_type)))
             }
           },
           "dim2" = {
             if(is.null(inner_type)) {
-              matrix(generate_val(DIM0[[t]]), nrow = n, ncol = col)   #TODO: data.frame
+              matrix(generate_val(T), nrow = n, ncol = col)   #TODO: data.frame
             } else {
               matrix(generate_val(inner_type), nrow = n, ncol = col)   #TODO: data.frame
             }
