@@ -55,7 +55,7 @@ res <- purrr::map_dfc(list(package=package, fun=fun_df$fun, success=success), fu
 write.csv(res, paste0(package, "_success.csv"), row.names=FALSE)
 
 
-meta_df <- data.frame(packge = package,
+meta_df <- data.frame(package = package,
                       num_exported_fun = length(exported_functions),
                       num_experimented_fun = nrow(fun_df),
                       budget = budget,
