@@ -135,7 +135,7 @@ feedback_loop <- function (package = na,
              record::open_db(db_path, create = FALSE)
 
              while (budget > 0) {
-               lapply(param_names, function(name) params[[name]] <<- value_generator(db=TRUE, db_path=db_path))
+               lapply(param_names, function(name) params[[name]] <<- value_generator(db=TRUE))
 
                states <- update_states(states, package, fun_name, fun, params)
                budget <- budget - 1
@@ -167,7 +167,10 @@ update_states <- function(states, package, fun_name, fun, params) {
 #' @return           a set of types to try
 feedback <- function(state) {
   if(state$exitval == 0L || state$exitval == 1L) {
-    return(generate_perms_fixed)
+    if(state$num_param == 1)
+      return(generate_types_randomly)
+    else
+      return(generate_perms_fixed)
   } else {
     return(generate_types_semi_randomly)
   }
@@ -188,10 +191,9 @@ generate_types_semi_randomly <- function(types, param_names, state=null) {
   lapply(input_types, function(type) sample(setdiff(types, type), 1))
 }
 
-generate_unique_types <- function(types, param_names, state=null) {
-  #todo
-}
-
+## generate_unique_types <- function(types, param_names, state=null) {
+##   #todo
+## }
 
 generate_perms_fixed <- function(types, param_names, state=null) {
   #todo: length(param_names == 1)
@@ -212,11 +214,9 @@ generate_perms_fixed <- function(types, param_names, state=null) {
   as.matrix(res)
 }
 
-
-generate_types_again <- function(types, param_names, state=null) {
-  state$input_type
-}
-
+## generate_types_again <- function(types, param_names, state=null) {
+##   state$input_type
+## }
 
 #' runs given function with args and stores the result in a list
 #' @param package    package name if the function is a library function
