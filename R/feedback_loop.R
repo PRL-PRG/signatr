@@ -200,18 +200,22 @@ generate_perms_fixed <- function(types, param_names, state=null) {
   input_type <- state$input_type
   input_types <- stringr::str_split(input_type, " x ")[[1]]
 
-  num_params <- length(param_names)
-  temp_perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
+  candidates <- sample(types, length(param_names)-1)
+  #TODO: only first parameter type is fixed
+  c(input_types[[1]], candidates)
 
-  res <- data.frame()
+  ## num_params <- length(param_names)
+  ## temp_perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
 
-  mapply(function(type, i) {
-    fixed_perms <- cbind(type, temp_perms)
-    colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
-    res <<- rbind(res, fixed_perms)
-    }, input_types, seq(num_params))
+  ## res <- data.frame()
 
-  as.matrix(res)
+  ## mapply(function(type, i) {
+  ##   fixed_perms <- cbind(type, temp_perms)
+  ##   colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
+  ##   res <<- rbind(res, fixed_perms)
+  ##   }, input_types, seq(num_params))
+
+  ## as.matrix(res)
 }
 
 ## generate_types_again <- function(types, param_names, state=null) {
