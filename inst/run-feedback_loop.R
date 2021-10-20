@@ -4,12 +4,14 @@ library(signatr)
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (length(args) != 3) stop("required arguments: [package] [strategy] [budget]")
+if (length(args) < 3) stop("required arguments: [package] [strategy] [budget]")
 
 package <- args[[1]]
 strategy <- args[[2]]
 budget <- as.integer(args[[3]])
-## tolerance <- as.integer(args[[4]])
+db_path <- NULL
+
+if (stringr::str_detect(strategy, "-db")) db_path <- args[[4]]
 
 print(paste0("Package: ", package))
 
@@ -40,9 +42,10 @@ print(paste0("Number of three argument functions: ", param3))
 
 tic("running functions")
 data <- lapply(fun_df$fun, function(fun) feedback_loop(package = package,
-                                                         fun_name = fun,
-                                                         strategy = strategy,
-                                                         budget = budget))
+                                                       fun_name = fun,
+                                                       strategy = strategy,
+                                                       budget = budget,
+                                                       db_path = db_path))
 
 running <- toc()
 

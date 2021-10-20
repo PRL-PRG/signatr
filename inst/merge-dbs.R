@@ -23,7 +23,7 @@ num_dbs <- length(dbs)
 cat(sprintf("Merging %s dbs\n\n", num_dbs))
 
 gbov <- paste0(run_dir, "/gbov")
-open_db(gbov, create = TRUE)
+open_db(gbov, create = if(dir.exists(gbov)) FALSE else TRUE)
 
 lapply(dbs, function(db) {
   cat("- merging", db, "\n") 
