@@ -29,7 +29,8 @@ fun_df <- data.frame(
   fun = exported_functions,
   num_param = unlist(num_params))
 
-if (stringr::str_detect(strategy, "perm")) fun_df <- fun_df[fun_df$num_param < 10, ]
+# doesn't need it for strategies that don't use gtools::permutations
+fun_df <- fun_df[fun_df$num_param < 10, ]
 
 param1 <- nrow(fun_df[fun_df$num_param == 1,])
 param2 <- nrow(fun_df[fun_df$num_param == 2,])

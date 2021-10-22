@@ -28,8 +28,8 @@ feedback_loop <- function (package = NA,
                            strategy = c("precompute", "precompute-random", "random", "random-feedback", "random-db"),
                            budget,
                            ## tolerance,
-                           db_path = null) {
-  print(fun_name)
+                           db_path = NULL) {
+  print(fun_name) #for debugging
 
   states <- list()
 
@@ -105,29 +105,36 @@ feedback_loop <- function (package = NA,
 
                types_to_try <- generate_types(types, param_names, last_state)
 
-               if(is_permutations(types_to_try)) {
-                 perms <- types_to_try
+               mapply(function(name, type){
+                 params[[name]] <<- value_generator(type)
+               }, param_names, types_to_try)
 
-                 if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
+               states <- update_states(states, package, fun_name, fun, params)
+               budget <- budget - 1
 
-                 apply(perms, MARGIN=1, FUN=function(perm) {
-                   types_to_try <- perm
+               ## if(is_permutations(types_to_try)) {
+               ##   perms <- types_to_try
 
-                   mapply(function(name, type) {
-                     params[[name]] <<- value_generator(type)},
-                     param_names, types_to_try)
+               ##   if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
 
-                   states <<- update_states(states, package, fun_name, fun, params)
-                   budget <<- budget - 1
-                 })
-               } else {
-                 mapply(function(name, type){
-                   params[[name]] <<- value_generator(type)
-                 }, param_names, types_to_try)
+               ##   apply(perms, MARGIN=1, FUN=function(perm) {
+               ##     types_to_try <- perm
 
-                 states <- update_states(states, package, fun_name, fun, params)
-                 budget <- budget - 1
-               }
+               ##     mapply(function(name, type) {
+               ##       params[[name]] <<- value_generator(type)},
+               ##       param_names, types_to_try)
+
+               ##     states <<- update_states(states, package, fun_name, fun, params)
+               ##     budget <<- budget - 1
+               ##   })
+               ## } else {
+               ##   mapply(function(name, type){
+               ##     params[[name]] <<- value_generator(type)
+               ##   }, param_names, types_to_try)
+
+               ##   states <- update_states(states, package, fun_name, fun, params)
+               ##   budget <- budget - 1
+               ## }
              }
            },
            "random-db" = {
@@ -177,14 +184,14 @@ feedback <- function(state) {
 }
 
 
-generate_types_randomly <- function(types, param_names, state=null) {
+generate_types_randomly <- function(types, param_names, state=NULL) {
   indices <- sample.int(length(types), length(param_names), replace = TRUE)
   random_perm <- lapply(indices, function(id) types[[id]])
 
   random_perm
 }
 
-generate_types_semi_randomly <- function(types, param_names, state=null) {
+generate_types_semi_randomly <- function(types, param_names, state=NULL) {
   input_type <- state$input_type
   input_types <- stringr::str_split(input_type, " x ")[[1]]
 
@@ -195,32 +202,28 @@ generate_types_semi_randomly <- function(types, param_names, state=null) {
 ##   #todo
 ## }
 
-generate_perms_fixed <- function(types, param_names, state=null) {
-  #todo: length(param_names == 1)
+generate_perms_fixed <- function(types, param_names, state=NULL) {
   input_type <- state$input_type
   input_types <- stringr::str_split(input_type, " x ")[[1]]
 
-  ## candidates <- sample(types, length(param_names)-1, replace=TRUE)
-  ## #TODO: only first parameter type is fixed
-  ## c(input_types[[1]], candidates)
+  candidates <- sample(types, length(param_names)-1, replace=TRUE)
+  #TODO: only first parameter type is fixed
+  c(input_types[[1]], candidates)
 
-  num_params <- length(param_names)
-  temp_perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
+  ## num_params <- length(param_names)
+  ## temp_perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
 
-  res <- data.frame()
+  ## res <- data.frame()
 
-  mapply(function(type, i) {
-    fixed_perms <- cbind(type, temp_perms)
-    colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
-    res <<- rbind(res, fixed_perms)
-    }, input_types, seq(num_params))
+  ## mapply(function(type, i) {
+  ##   fixed_perms <- cbind(type, temp_perms)
+  ##   colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
+  ##   res <<- rbind(res, fixed_perms)
+  ##   }, input_types, seq(num_params))
 
-  as.matrix(res)
+  ## as.matrix(res)
 }
 
-## generate_types_again <- function(types, param_names, state=null) {
-##   state$input_type
-## }
 
 #' runs given function with args and stores the result in a list
 #' @param package    package name if the function is a library function
