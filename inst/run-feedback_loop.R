@@ -4,14 +4,15 @@ library(signatr)
 
 args <- commandArgs(trailingOnly=TRUE)
 
-if (length(args) < 3) stop("required arguments: [package] [strategy] [budget]")
+## if (length(args) < 3) stop("required arguments: [package] [strategy] [budget]")
+if (length(args) < 2) stop("required arguments: [package] [budget]")
 
 package <- args[[1]]
-strategy <- args[[2]]
-budget <- as.integer(args[[3]])
+## strategy <- args[[2]]
+budget <- as.integer(args[[2]])
 db_path <- NULL
 
-if (stringr::str_detect(strategy, "-db")) db_path <- args[[4]]
+if (length(args) == 3) db_path <- args[[3]]
 
 print(paste0("Package: ", package))
 
@@ -30,7 +31,7 @@ fun_df <- data.frame(
   num_param = unlist(num_params))
 
 # doesn't need it for strategies that don't use gtools::permutations
-fun_df <- fun_df[fun_df$num_param < 10, ]
+fun_df <- fun_df[fun_df$num_param < 8, ]
 
 param1 <- nrow(fun_df[fun_df$num_param == 1,])
 param2 <- nrow(fun_df[fun_df$num_param == 2,])
@@ -44,7 +45,7 @@ print(paste0("Number of three argument functions: ", param3))
 tic("running functions")
 data <- lapply(fun_df$fun, function(fun) feedback_loop(package = package,
                                                        fun_name = fun,
-                                                       strategy = strategy,
+                                                       ## strategy = strategy,
                                                        budget = budget,
                                                        db_path = db_path))
 

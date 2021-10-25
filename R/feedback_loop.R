@@ -1,11 +1,14 @@
-# Types
 S <- c("logical", "integer", "double", "complex", "character", "raw")
 V <- c("logical[]", "integer[]", "double[]", "complex[]", "character[]", "raw[]")
 T <- c("list<any>", "class<matrix>")
 ## "list<logical[]>", "list<integer[]>", "list<double[]>", "list<complex[]>", "list<character[]>", "list<raw[]"
+
+## TYPES: using types that contractr uses (extendable)
 TYPES <- c(S, V, T)
 
-#' runs the given function with values from value generator
+
+#' Performs experiments with library functions or user defined functions and records the result in a dataframe
+#'
 #' @param  package         package name
 #' @param  fun_name        function name
 #' @param  fun             function to infer type signature
@@ -18,14 +21,14 @@ TYPES <- c(S, V, T)
 #' @importfrom purrr map_dfr
 #' @export
 #' @examples
-#' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "precompute", budget = 7)
-#' feedback_loop(package = "stringr", fun_name = "str_detect", strategy = "random-feedback", budget = 343)
+#' feedback_loop(fun_name = "add_1", fun = function(x) {x+1}, strategy = "random-feedback", budget = 7)
+#' feedback_loop(package = "stringr", fun_name = "str_detect", strategy = "random-db", budget = 343, db_path = "../tests/testthat/db/test_db")
 feedback_loop <- function (package = NA,
                            fun_name,
                            fun,
                            types = TYPES,
                            value_generator = generate_val,
-                           strategy = c("precompute", "precompute-random", "random", "random-feedback", "random-db"),
+                           ## strategy = c("precompute", "precompute-random", "random", "random-feedback", "random-db"),
                            budget,
                            ## tolerance,
                            db_path = NULL) {
@@ -39,6 +42,7 @@ feedback_loop <- function (package = NA,
 
   params <- formals(fun)               ## todo: we can inspect default arg here
   num_params <- length(params)
+  print(num_params)
 
   if (num_params == 0) {
     new_states <- lapply(seq(budget), function(x) run_fun(package, fun_name, fun, list()))
@@ -49,129 +53,53 @@ feedback_loop <- function (package = NA,
 
     types_to_try <- list()
 
-    switch(strategy,
-           "precompute" = {
-             #matrix, array
-             #complexity: n^r (7^10 is the limit)
-             perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
+    while(budget > 0) {
+      if (length(states) == 0) {
+        generate_types <- generate_types_randomly
+      } else {
+        last_state <- states[nrow(states), ]
+        generate_types <- feedback(last_state)
+      }
 
-             if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
+      types_to_try <- generate_types(types, param_names, last_state)
 
-             ## 1. pick each permutation in the original order (perms row-by-row)
-             apply(perms, margin=1, fun=function(perm) {
-               types_to_try <- perm
+      mapply(function(name, type){
+        params[[name]] <<- value_generator(type, db = !is.null(db_path))
+      }, param_names, types_to_try)
 
-               mapply(function(name, type) {params[[name]] <<- value_generator(type)}, param_names, types_to_try)
-
-               states <<- update_states(states, package, fun_name, fun, params)
-             })
-           },
-           "precompute-random" = {
-             perms <- gtools::permutations(n=length(types), r=num_params, v=types, repeats.allowed=TRUE)
-
-             if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE] else budget <- nrow(perms)
-
-             ## 2. randomize the pick of permutations
-             order <- sample.int(nrow(perms), budget, replace=FALSE)
-
-             lapply(seq(order), function(id) {
-               types_to_try <- perms[id, ,drop=FALSE]
-
-               mapply(function(name, type) {params[[name]] <<- value_generator(type, n = 3, col = 2)}, param_names, types_to_try)
-
-               states <<- update_states(states, package, fun_name, fun, params)
-             })
-           },
-           "random" = {
-             while (budget > 0) {
-               types_to_try <- generate_types_randomly(types, param_names)
-
-               mapply(function(name, type){
-                 params[[name]] <<- value_generator(type)
-               }, param_names, types_to_try)
-
-               states <- update_states(states, package, fun_name, fun, params)
-               budget <- budget - 1
-             }
-           },
-           "random-feedback" = {
-             while(budget > 0) {
-               if (length(states) == 0) {
-                 generate_types <- generate_types_randomly
-               } else {
-                 last_state <- states[nrow(states), ]
-                 generate_types <- feedback(last_state)
-               }
-
-               types_to_try <- generate_types(types, param_names, last_state)
-
-               mapply(function(name, type){
-                 params[[name]] <<- value_generator(type)
-               }, param_names, types_to_try)
-
-               states <- update_states(states, package, fun_name, fun, params)
-               budget <- budget - 1
-
-               ## if(is_permutations(types_to_try)) {
-               ##   perms <- types_to_try
-
-               ##   if (nrow(perms) > budget) perms <- perms[1:budget, ,drop=FALSE]
-
-               ##   apply(perms, MARGIN=1, FUN=function(perm) {
-               ##     types_to_try <- perm
-
-               ##     mapply(function(name, type) {
-               ##       params[[name]] <<- value_generator(type)},
-               ##       param_names, types_to_try)
-
-               ##     states <<- update_states(states, package, fun_name, fun, params)
-               ##     budget <<- budget - 1
-               ##   })
-               ## } else {
-               ##   mapply(function(name, type){
-               ##     params[[name]] <<- value_generator(type)
-               ##   }, param_names, types_to_try)
-
-               ##   states <- update_states(states, package, fun_name, fun, params)
-               ##   budget <- budget - 1
-               ## }
-             }
-           },
-           "random-db" = {
-             if (is.null(db_path)) stop("missing the path to db")
-             record::open_db(db_path, create = FALSE)
-
-             while (budget > 0) {
-               lapply(param_names, function(name) params[[name]] <<- value_generator(db=TRUE))
-
-               states <- update_states(states, package, fun_name, fun, params)
-               budget <- budget - 1
-             }
-
-             record::close_db()
-           },
-           )
+      states <- update_states(states, package, fun_name, fun, params)
+      budget <- budget - 1
+    }
   }
 
   rownames(states) <- NULL
   states
 }
 
-is_permutations <- function(sth) {
-  !is.null(nrow(sth))
-}
 
+#' Runs function with params and updates states with the result
+#'
+#' @param states    dataframe containing result of running functions
+#' @param package   pacakge name if the function is a library function
+#' @param fun_names name of the function
+#' @param fun       function
+#' @param params    values generated by value generator to plug into the function
 update_states <- function(states, package, fun_name, fun, params) {
-  args <- params #TODO: just use params
+  args <- params
   new_state <- run_fun(package, fun_name, fun, args)
   purrr::map_dfr(list(states, new_state), function(x) x)
 }
 
-#' decides whether to use a new set of types in the next run or not
-## @param history    sets of types used so far
-#' @param state      state of the last run
-## @param tolerance  how many times to try the same set of types
-#' @return           a set of types to try
+
+#' Decides which strategy to use for picking types in the next round of experiment
+#' based on the result of previous run
+#'
+#' Strategy 1. generate_types_randomly
+#' Strategy 2. generate_types_semi_randomly
+#' Strategy 3. generate_perms_fixed
+#'
+#' @param state      result of the last run
+#' @return           type picking strategy
 feedback <- function(state) {
   if(state$exitval == 0L || state$exitval == 1L) {
     if(state$num_param == 1)
@@ -184,13 +112,15 @@ feedback <- function(state) {
 }
 
 
+#' Pick types randomly
+#' Used when feedback is not available (first run) or not useful (function takes one argument)
 generate_types_randomly <- function(types, param_names, state=NULL) {
-  indices <- sample.int(length(types), length(param_names), replace = TRUE)
-  random_perm <- lapply(indices, function(id) types[[id]])
-
-  random_perm
+  sample(types, length(param_names), replace = TRUE)
 }
 
+
+#' Pick a type different from previous run in each position of the parameters
+#' Used when previous run failed (errored out)
 generate_types_semi_randomly <- function(types, param_names, state=NULL) {
   input_type <- state$input_type
   input_types <- stringr::str_split(input_type, " x ")[[1]]
@@ -198,39 +128,25 @@ generate_types_semi_randomly <- function(types, param_names, state=NULL) {
   lapply(input_types, function(type) sample(setdiff(types, type), 1))
 }
 
-## generate_unique_types <- function(types, param_names, state=null) {
-##   #todo
-## }
 
+#' Fix the type of the first parameter, but pick a different type for the rest of the parameters
+#' Used when previous run was successful
 generate_perms_fixed <- function(types, param_names, state=NULL) {
   input_type <- state$input_type
   input_types <- stringr::str_split(input_type, " x ")[[1]]
 
-  candidates <- sample(types, length(param_names)-1, replace=TRUE)
-  #TODO: only first parameter type is fixed
-  c(input_types[[1]], candidates)
+  the_rest <- lapply(input_types[-1], function(t) sample(setdiff(types, t), 1))
 
-  ## num_params <- length(param_names)
-  ## temp_perms <- gtools::permutations(n=length(types), r=num_params-1, v=types, repeats.allowed=TRUE)
-
-  ## res <- data.frame()
-
-  ## mapply(function(type, i) {
-  ##   fixed_perms <- cbind(type, temp_perms)
-  ##   colnames(fixed_perms) <- c(param_names[[i]], param_names[-i])
-  ##   res <<- rbind(res, fixed_perms)
-  ##   }, input_types, seq(num_params))
-
-  ## as.matrix(res)
+  c(input_types[[1]], the_rest)
 }
 
 
-#' runs given function with args and stores the result in a list
+#' Runs the function with args and stores the result in a list
 #' @param package    package name if the function is a library function
 #' @param fun_name   function name
-#' @param fun        a closure
-#' @param args       arguments to run the function with
-#' @return           list of metadata and running result
+#' @param fun        function
+#' @param args       arguments
+#' @return           list of the running result and metadata
 #' @importfrom tibble  tibble
 #' @importfrom contractr  infer_type
 #' @export
@@ -270,11 +186,9 @@ run_fun <- function(package = NULL, fun_name, fun, args) {
 }
 
 
-#' generates values based on the type
-#' @param type                  type of value to generate
-#' @param inner_type (optional) types of each element in heterogeneous types like list
-#' @param n   (optional)        length or number of rows
-#' @param col (optional)        number of columns
+#' Generates values based on the type
+#' @param type type of value to generate
+#' @param db   TRUE if we want values from database
 #' @return
 #' @export
 generate_val <- function(type=NULL, db = FALSE) {
@@ -333,26 +247,22 @@ generate_val <- function(type=NULL, db = FALSE) {
 }
 
 
-#' @param      ddata  generated from add_signature
-#' @return     the number of unique signatures
-#' @importFrom purrr map_dfr
+#' Computes success rate using the number of unique signatures inferred
+#' @param data obtained from running feedback_loop
+#' @return number of signatures successfully inferred / number of tried signatures 
 #' @export
 #' @examples
-#' data <- feedback_loop("stringr", "str_detect", strategy = "perm", budget = 343)
-#' res <- add_signature(data)
-#' num_sigs(res)
-num_suc_sigs <- function(data) {
+#' data <- feedback_loop(package = "stringr", fun_name = "str_detect", strategy = "random-feedback", budget = 343)
+#' compute_suc(data)
+compute_suc <- function(data) {
   sucs <- data[data$exitval == 0L, ,drop=FALSE]
   warns <- data[data$exitval == 1L, ,drop=FALSE]
 
   sucs_or_warns <- purrr::map_dfr(list(sucs, warns), function(x) x)
 
-  length(unique(sucs_or_warns$input_type))
-}
+  num_suc_sigs <- length(unique(sucs_or_warns$input_type))
 
-#'@export
-compute_suc <- function(data) {
-  percent <- num_suc_sigs(data)/length(unique(data$input_type)) * 100
+  percent <- num_suc_sigs/length(unique(data$input_type)) * 100
 
   round(percent, digits=1)
 }
