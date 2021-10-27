@@ -36,20 +36,24 @@ metadata  <- lapply(metadata_files, function(f) read.csv(f))
 ## How to read signatr data
 
 There are three kinds of data we collect from signatr experiments.   
+For instance,  
 
 + signature data: the sig column indicates the inferred signature of the function if the run didn't error
 ```{r}
+cat("Reading signature data from package: ", packages[[1]])
 signature_data[[1]]
 ```
 
 + success data: the success column indicates success rate* of the experiment  
 *the success rate is calculated by the number of unique signature inferred divided by the number of unique input types tried
 ```{r}
+cat("Reading success data from package: ", packages[[1]])
 success_data[[1]]
 ```
 
 + metadata: includes metadata obtained from the experiment    
 ```{r}
+cat("Reading metadata from package: ", packages[[1]])
 metadata[[1]]
 ```
 
