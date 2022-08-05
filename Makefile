@@ -1,8 +1,6 @@
-R = R
+.PHONY: all build check clean document test install
 
-.PHONY: all build check document test
-
-all: document build check install
+all: install
 
 build: document
 	$(R) CMD build .
@@ -14,15 +12,13 @@ clean:
 	-rm -f signatr*tar.gz
 	-rm -fr signatr.Rcheck
 	-rm -rf src/*.o src/*.so
+	-rm -rf tests/testthat/test_db/*
 
 document:
 	$(R) -e 'devtools::document()'
 
 test:
 	$(R) -e 'devtools::test()'
-
-lintr:
-	$(R) --slave -e "lintr::lint_package()"
 
 install: clean
 	$(R) CMD INSTALL .
