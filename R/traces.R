@@ -6,15 +6,11 @@
 traces_load <- function(path) {
   traces <- qread(path) %>%
     dplyr::mutate(
-      id = 1:n(),
-      rdb_path = file.path(dirname(path), rdb_path),
-      # TODO: this should be only enabled for base package!
-      fun_name = stringr::str_replace(fun_name, "wrap_", ""),
-      fun_name = stringr::str_replace(fun_name, "div", "/"),
-      fun_name = stringr::str_replace(fun_name, "basewrap", "base")
+      id = 1:dplyr::n(),
+      rdb_path = file.path(dirname(path), rdb_path)
     ) %>%
     tibble::as_tibble()
-  
+
   traces_success <- dplyr::filter(traces, status == 0)
   paths <- unique(traces_success$rdb_path)
   missing_paths <- paths[!file.exists(paths)]
@@ -22,10 +18,10 @@ traces_load <- function(path) {
     for (p in missing_paths) {
       warning("Missing path: ", p)
     }
-    
+
     traces <- dplyr::anti_join(traces, tibble::tibble(rdb_path = missing_paths), by = "rdb_path")
   }
-  
+
   invisible(traces)
 }
 
@@ -37,10 +33,10 @@ traces_stats <- function(traces) {
       num_traces = dplyr::n(),
       success = sum(status == 0),
       ratio_success = success / dplyr::n(),
-      error = sum(status != 0), 
+      error = sum(status != 0),
       ratio_error = error / dplyr::n()
     )
-  
+
   class(stats) <- c("traces_stats", class(stats))
   stats
 }
@@ -64,8 +60,8 @@ pretty_print.traces_stats <- function(x, ...) {
 #' @importFrom stringr str_replace
 #' @export
 summary.traces_stats <- function(stats, ...) {
-  pkg_names = stringr::str_replace(stats$fun_name, "(.*)::.*", "\\1")
-  
+  pkg_names <- stringr::str_replace(stats$fun_name, "(.*)::.*", "\\1")
+
   s <- list(
     num_traces = sum(stats$num_traces),
     num_success_traces = sum(stats$success),
@@ -73,7 +69,7 @@ summary.traces_stats <- function(stats, ...) {
     num_pkgs = unique(pkg_names) %>% length,
     num_funs = unique(stats$fun_name) %>% length
   )
-  
+
   class(s) <- "traces_stats_summary"
   s
 }

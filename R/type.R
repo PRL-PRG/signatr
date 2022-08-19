@@ -1,10 +1,15 @@
 #' @importFrom sxpdb open_db get_value_idx close_db
 #' @importFrom purrr map map_lgl
-#' @importFrom dplyr everything mutate select filter
-#' @importFrom stringr str_c
+#' @importFrom dplyr everything mutate select filter bind_rows
+#' @importFrom stringr str_c str_starts
 #' @importFrom progress progress_bar
+#' @importFrom tibble tibble as_tibble
 #' @export
 traces_type <- function(traces, type_system, args_db) {
+  if (is.character(traces)) {
+    traces <- traces_load(traces)
+  }
+
   if (is.character(args_db)) {
     args_db <- sxpdb::open_db(args_db)
     on.exit(sxpdb::close_db(args_db))
@@ -12,7 +17,7 @@ traces_type <- function(traces, type_system, args_db) {
   
   pb <- progress::progress_bar$new(
     format = "typing :fun [:bar] :percent eta: :eta",
-    total = nrow(traces)
+    total = nrow(filter(traces, status == 0))
   )
   
   type_one_call <- function(args_idx, result, dispatch, fun_name, id, rdb, ...) {
@@ -29,7 +34,9 @@ traces_type <- function(traces, type_system, args_db) {
       types$id <- id
       
       tmp <- types$args
-      names(tmp) <- stringr::str_c("..", names(tmp))
+      if (length(tmp) > 0) {
+        names(tmp) <- stringr::str_c("..", names(tmp))
+      }
       types$args <- NULL
       types <- c(types, tmp)
       
@@ -40,21 +47,22 @@ traces_type <- function(traces, type_system, args_db) {
         type_params <- type_params[sort(names(type_params))]
         types$type_values <- stringr::str_c(names(type_params), collapse = "; ")
         types$type_params <- stringr::str_c(type_params, collapse = ", ")
-        if (nchar(types$type_params)) {
+
+        #if (nchar(types$type_params)) {
           #  types$signature <- str_c("[", str_c(types$type_params, collapse=", "), "]", types$signature)
-        } else {
+        #} else {
           types$type_params <- NA
           types$type_values <- NA
-        }
+        #}
       } else {
         #types$type_params <- NA
         #types$type_values <- NA
       }
       
-      as_tibble(types)
+      tibble::as_tibble(types)
     }, error=function(e) {
       message("Unable to type ", id, " record: ", e$message)
-      tibble(fun_name = character(0), id = integer(0), signature = character(0))
+      tibble::tibble(fun_name = character(0), id = integer(0), signature = character(0))
     }, finally = {
       pb$tick(tokens = list(fun = fun_name))
     })
@@ -74,7 +82,7 @@ traces_type <- function(traces, type_system, args_db) {
         t
       })
       
-      bind_rows(types)
+      dplyr::bind_rows(types)
     }, error=function(e) {
       message("Error when processing: ", fun_name, "from: ", rdb_path, ": ",e$message)
       tibble(fun_name = character(0), id = integer(0), signature = character(0))
@@ -108,9 +116,9 @@ type_system_typeof <- function(args, ret, ...) type_system_hof(args, ret, typeof
 #' @importFrom contractr infer_type
 type_system_tastr <- function(args, ret, ...) type_system_hof(args, ret, contractr::infer_type)
 
-is_class_type <- function(x) str_starts(x, fixed("class<"))
+is_class_type <- function(x) stringr::str_starts(x, fixed("class<"))
 
-is_list_type <- function(x) str_starts(x, fixed("list<"))
+is_list_type <- function(x) stringr::str_starts(x, fixed("list<"))
 
 #' @importFrom contractr parse_type
 parse_tastr_type <- function(x) {

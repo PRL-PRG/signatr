@@ -1,3 +1,5 @@
+R := R
+
 .PHONY: all build check clean document test install
 
 all: install
