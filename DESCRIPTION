@@ -16,13 +16,17 @@ RoxygenNote: 7.1.2
 Suggests: 
     testthat
 Imports:
+    argtracer,
     cli,
+    contractr,
     dplyr,
+    generatr,
     knitr,
     progress,
     purrr,
     qs,
     stringr,
+    sxpdb,
     tibble
 Remotes:
     PRL-PRG/argtracer,
