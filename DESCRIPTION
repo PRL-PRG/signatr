@@ -2,12 +2,23 @@ Package: signatr
 Title: Infer functions signatures by fuzzing their inputs
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    c(person(given = "Filip",
+           family = "Křikava",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+           email = "filip.krikava@fit.cvut.cz",
+           comment = c(ORCID = "0000-0002-0478-6202")),
+       person(given = "Pierre",
+           family = "Donat-Bouillud",
+           role = c("aut", "cre"),
+           email = "donatpie@fit.cvut.cz",
+           comment = c(ORCID = "0000-0003-4455-1130")),
+      person(given = "Alexi",
+           family = "Turcotte",
+           role = c("aut", "cre"),
+           email = "alexi@ccs.neu.edu",
+           comment = c(ORCID = "0000-0002-0381-0477")),
+           )
+Description: Fuzzes R code to generate code signaturs, using a database of R values.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
