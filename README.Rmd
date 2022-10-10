@@ -1,0 +1,63 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# signatr
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+The goal of signatr is to infer functions signatures by fuzzing their inputs.
+
+## Demo
+
+The following is a short demonstration of the basic signatr functionnalities i.e., how to create the value database by running R code and then how to use it for fuzzing.
+
+```{r}
+library(signatr)
+```
+
+To generate a database of values, we need some code to run. One way to get it is to extract it from an existing R package, for example `stringr`:
+
+```{r}
+extract_package_code("stringr", output_dir = "demo")
+```
+
+This will extract all the runnable snippets from the package documentation and tests into the given directory. For example:
+
+```{r}
+cat(readLines("demo/examples/str_detect.Rd.R", n = 5))
+```
+
+
+Next, we trace the file by executing it and recording all the calls using the `trace_file` function:
+
+```{r}
+trace_file("demo/examples/str_detect.Rd.R", db_path = "demo.sxpdb")
+```
+
+The resulting database is stored as demo.sxpdb. In this example, after running the `str_detect.Rd.R`  file, the database contains 20 unique values. This can be repeated for all the other files. To trace multiple files in parallel, one database is created per file, which are merged using the merge_dbs function once they are all available. This also allows us to run larger experiments on multiple machines.
+
+Once the database is ready, we can start fuzzing. The fuzzer has a number of configration points, but the easiest starting point is the `quick_fuzz` helper function:
+
+```{r}
+R <- quick_fuzz("stringr::str_detect", "demo.sxpdb", budget = 100, action = infer_call_signature)
+```
+
+The infer_call_signature function infers types for each call argument and return value using the type annotation language, specifically, the `contractr` type inference tool provided by the work is used. `infer_call_signature` returns a data frame with details for each call. The data frame includes the inferred call signature in the `result` column:
+
+```{r}
+R
+```
+
