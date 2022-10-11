@@ -9,12 +9,12 @@ Authors@R:
            comment = c(ORCID = "0000-0002-0478-6202")),
        person(given = "Pierre",
            family = "Donat-Bouillud",
-           role = c("aut", "cre"),
+           role = c("aut"),
            email = "donatpie@fit.cvut.cz",
            comment = c(ORCID = "0000-0003-4455-1130")),
       person(given = "Alexi",
            family = "Turcotte",
-           role = c("aut", "cre"),
+           role = c("aut"),
            email = "alexi@ccs.neu.edu",
            comment = c(ORCID = "0000-0002-0381-0477"))
            )
