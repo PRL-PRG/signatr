@@ -1,5 +1,5 @@
 ---
-output: github_document
+output: md_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
@@ -63,7 +63,7 @@ The resulting database is stored as demo.sxpdb. In this example, after running t
 Once the database is ready, we can start fuzzing. The fuzzer has a number of configration points, but the easiest starting point is the `quick_fuzz` helper function:
 
 ```{r}
-R <- quick_fuzz("stringr::str_detect", "demo.sxpdb", budget = 100, action = infer_call_signature)
+R <- quick_fuzz("stringr", "str_detect", "demo.sxpdb", budget = 100, action = "infer")
 ```
 
 The infer_call_signature function infers types for each call argument and return value using the type annotation language, specifically, the `contractr` type inference tool provided by the work is used. `infer_call_signature` returns a data frame with details for each call. The data frame includes the inferred call signature in the `result` column:
