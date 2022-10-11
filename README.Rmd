@@ -20,6 +20,17 @@ knitr::opts_chunk$set(
 
 The goal of signatr is to infer functions signatures by fuzzing their inputs.
 
+## Installation
+
+You can install `signatr` with `devtools::install_github("PRL-PRG/signatr")` in R.
+Apart from CRAN dependencies, it also requires the following ones from github. 
+Some need some more preparation before using `devtools::install`:
+
+- [sxpdb](https://github.com/PRL-PRG/sxpdb/): R value database
+- [generatr](https://github.com/reallyTG/generatr): fuzzing utilities
+- [contractr](https://github.com/PRL-PRG/contractr):type signature parsing and checking for R
+- [argtracer](https://github.com/PRL-PRG/argtracer): trace R values and store them in the R value database. It requires a modified R interpreter called R-dyntrace. It can be installed from [here](https://github.com/PRL-PRG/R-dyntrace/tree/r-4.0.2) for version 4.0.2. Then add the resulting `R` binary in `bin` in your `PATH` and run the installation.
+
 ## Demo
 
 The following is a short demonstration of the basic signatr functionnalities i.e., how to create the value database by running R code and then how to use it for fuzzing.

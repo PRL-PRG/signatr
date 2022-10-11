@@ -16,7 +16,7 @@ Authors@R:
            family = "Turcotte",
            role = c("aut", "cre"),
            email = "alexi@ccs.neu.edu",
-           comment = c(ORCID = "0000-0002-0381-0477")),
+           comment = c(ORCID = "0000-0002-0381-0477"))
            )
 Description: Fuzzes R code to generate code signaturs, using a database of R values.
 License: MIT + file LICENSE
