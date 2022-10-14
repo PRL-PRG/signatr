@@ -3,11 +3,12 @@ pretty_print <- function(x, ...) {
   UseMethod("pretty_print")
 }
 
+#' @importFrom dplyr count mutate
 #' @export
 cs_count <- function(df, ...) {
   n_rows = nrow(df)
-  count(df, ..., sort=TRUE) %>%
-    mutate(p=n/n_rows*100, cp=cumsum(p))
+  dplyr::count(df, ..., sort = TRUE) %>%
+    dplyr::mutate(p = n / n_rows * 100, cp = cumsum(p))
 }
 
 ## Formatting
